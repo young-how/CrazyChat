@@ -24,6 +24,7 @@ public class ChatClient extends JFrame {
     private String server_ip="10.7.8.7";  //服务器ip地址
     private String server_port="9092";  //服务器端口
     private String topic="chatroom";  //消息话题
+    private userStat user=new userStat();  //当前客户端的用户信息
 
     ExecutorService executor = Executors.newFixedThreadPool(5);
     Runnable send_task; //消息发送任务
@@ -46,44 +47,28 @@ public class ChatClient extends JFrame {
         // 设置窗体位置为右下角
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         setLocation(screenSize.width - getWidth(), screenSize.height - getHeight()-50);
-        // 添加鼠标监听器，监听退出和植入
-//        addMouseListener(new MouseAdapter() {
-//            @Override
-//            public void mouseEntered(MouseEvent e) {
-//                // 鼠标进入窗体
-//                setOpacity((float)0.5);
-//            }
-//
-//            @Override
-//            public void mouseExited(MouseEvent e) {
-//                // 鼠标离开窗体
-//                setOpacity((float)0.01);
-//            }
-//        });
-//        addMouseMotionListener(new MouseMotionAdapter() {
-//            @Override
-//            public void mouseMoved(MouseEvent e) {
-//                // 获取鼠标当前位置
-//                Point mousePoint = e.getPoint();
-//                // 判断鼠标是否在窗口范围内
-//                if (In_bound(mousePoint.x,mousePoint.y)) {
-//                    // 鼠标在范围内
-//                    setOpacity((float)0.5);
-//                    System.out.println("Mouse moved outside the window.");
-//                }
-//                else{
-//                    setOpacity((float)0.01);
-//                }
-//            }
-//        });
         // 添加关闭按钮
-        JButton closeButton = new JButton("X");
+        JButton closeButton = new JButton("*");
+        closeButton.setPreferredSize(new Dimension(40, 17)); // 设置高度为 30
         JButton minButton = new JButton("-");
+        minButton.setPreferredSize(new Dimension(40, 17)); // 设置高度为 30
+        JButton cleanButton = new JButton("~");  //清屏
+        cleanButton.setPreferredSize(new Dimension(40, 17)); // 设置高度为 30
         closeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 dispose(); // 关闭窗口
                 System.exit(0); // 结束程序
+            }
+        });
+        cleanButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    sendMessage("/clean");
+                } catch (UnknownHostException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
         });
         minButton.addActionListener(new ActionListener() {
@@ -110,7 +95,7 @@ public class ChatClient extends JFrame {
 
         inputField = new JTextField();
         name_input= new JTextField();
-        name_input.setColumns(13);
+        name_input.setColumns(10);
 
         JButton sendButton = new JButton("Send");
         sendButton.addActionListener(new ActionListener() {
@@ -157,6 +142,7 @@ public class ChatClient extends JFrame {
         titlePanel.add(new JLabel("CrazyChat"));
         titlePanel.add(new JLabel("         name："));
         titlePanel.add(name_input);
+        titlePanel.add(cleanButton);
         titlePanel.add(minButton);
         titlePanel.add(closeButton);
         add(titlePanel, BorderLayout.NORTH);
@@ -196,6 +182,21 @@ public class ChatClient extends JFrame {
             sender.send(message_info);
             inputField.setText("");
         }
+        repaint();
+    }
+    //带控制信息的信息发送
+    private void sendMessage(String control_order) throws UnknownHostException {
+        String name = name_input.getText();
+        if(name==""){
+            InetAddress localHost = InetAddress.getLocalHost();
+            sender.setUserName(localHost.getHostAddress());  //将ip地址设置为用户名
+        }
+        else{
+            sender.setUserName(name);
+        }
+        String message_info=control_order;
+        sender.send(message_info);
+        repaint();
     }
 
     public static void main(String[] args) {
