@@ -21,10 +21,16 @@ public class ChatClient extends JFrame {
     private reciver rec;
     private boolean minmum=false;
     private String ip;   //当前客户端ip地址
-    private String server_ip="10.7.8.7";  //服务器ip地址
+    private String server_ip="192.168.0.12";  //服务器ip地址
     private String server_port="9092";  //服务器端口
     private String topic="chatroom";  //消息话题
     private userStat user=new userStat();  //当前客户端的用户信息
+    // 状态显示的标签
+    private JLabel send_num=new JLabel();  //消息发送数目
+    private JLabel score=new JLabel("-");  //分数
+    private JLabel level=new JLabel("-");  //等级
+    private JLabel rank=new JLabel("-");   //积分排名
+    private JLabel active_num=new JLabel("-");   //活跃人数
 
     ExecutorService executor = Executors.newFixedThreadPool(5);
     Runnable send_task; //消息发送任务
@@ -41,7 +47,7 @@ public class ChatClient extends JFrame {
         // 将窗体设置为半透明
         setUndecorated(true); // 隐藏边框
         setBackground(new Color(255, 255, 255, 0)); // 设置背景颜色为半透明黑色
-        setOpacity((float)0.5);
+        setOpacity((float)1);
         //设置窗口始终置顶
         setAlwaysOnTop(true);
         // 设置窗体位置为右下角
@@ -80,7 +86,7 @@ public class ChatClient extends JFrame {
                     minmum=false;
                 }
                 else{
-                    setSize(400, 50);
+                    setSize(400, 25);
                     setLocation(screenSize.width - getWidth(), screenSize.height - getHeight()-50);
                     minmum=true;
                 }
@@ -130,22 +136,62 @@ public class ChatClient extends JFrame {
             }
         });
 
+        //容器布局设置
         JPanel inputPanel = new JPanel(new BorderLayout());
+        inputPanel.setPreferredSize(new Dimension(inputPanel.getPreferredSize().width, 25));
         inputPanel.add(inputField, BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
 
-        setLayout(new BorderLayout());
-        add(new JScrollPane(chatArea), BorderLayout.CENTER);
-        add(inputPanel, BorderLayout.SOUTH);
+//        setLayout(new BorderLayout());
 
+        //顶部容器栏
         JPanel titlePanel = new JPanel(new FlowLayout());
+        titlePanel.setPreferredSize(new Dimension(titlePanel.getPreferredSize().width, 25));
         titlePanel.add(new JLabel("CrazyChat"));
         titlePanel.add(new JLabel("         name："));
         titlePanel.add(name_input);
         titlePanel.add(cleanButton);
         titlePanel.add(minButton);
         titlePanel.add(closeButton);
-        add(titlePanel, BorderLayout.NORTH);
+
+        //状态显示栏
+        JPanel statusPanel = new JPanel(new FlowLayout());
+        statusPanel.setPreferredSize(new Dimension(statusPanel.getPreferredSize().width, 17));
+        statusPanel.add(new JLabel("发言数: "));
+        statusPanel.add(send_num);
+        statusPanel.add(new JLabel("积分: "));
+        statusPanel.add(score);
+        statusPanel.add(new JLabel("等级: "));
+        statusPanel.add(level);
+        statusPanel.add(new JLabel("排名: "));
+        statusPanel.add(rank);
+        statusPanel.add(new JLabel("活跃人数: "));
+        statusPanel.add(active_num);
+        //文本框显示区域
+        JScrollPane ChatPanel=new JScrollPane(chatArea);
+        ChatPanel.setPreferredSize(new Dimension(ChatPanel.getPreferredSize().width, 370));
+
+        //添加布局
+        setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
+//        add(titlePanel, BorderLayout.PAGE_START);
+//        add(statusPanel,BorderLayout.PAGE_END);
+//        add(ChatPanel, BorderLayout.CENTER);
+//        add(inputPanel, BorderLayout.SOUTH);
+         //设置面板填充横向窗口
+        titlePanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        statusPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        ChatPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        inputPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        // 将面板添加到窗口中
+        add(titlePanel);
+        add(statusPanel);
+        add(ChatPanel);
+        add(inputPanel);
+
+
+
+        //add(statusPanel);
+
         //设置ip地址
         try {
             ip=InetAddress.getLocalHost().getHostAddress().toString();

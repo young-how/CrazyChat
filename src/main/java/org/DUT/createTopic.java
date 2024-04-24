@@ -11,7 +11,7 @@ import java.util.concurrent.ExecutionException;
 public class createTopic {
     public static void main(String[] args) {
         // Kafka 服务器地址
-        String bootstrapServers = "10.7.8.7:9092";
+        String bootstrapServers = "192.168.0.12:9092";
 
         // 设置 Kafka 管理员客户端属性
         Properties properties = new Properties();
