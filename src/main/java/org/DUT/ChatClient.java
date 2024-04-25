@@ -1,29 +1,42 @@
 package org.DUT;
 
+import org.springframework.beans.factory.annotation.Value;
+
+import javax.annotation.PostConstruct;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.sun.management.VMOption.Origin.CONFIG_FILE;
+
+
 public class ChatClient extends JFrame {
     private JTextArea chatArea;
     private JTextField inputField;
     private JTextField name_input;
-    private String username="null";
+    @Value("${message.initName}")
+    private String username;
     private Sender sender;
     private reciver rec;
     private boolean minmum=false;
     private String ip;   //当前客户端ip地址
-    private String server_ip="192.168.0.12";  //服务器ip地址
-    private String server_port="9092";  //服务器端口
-    private String topic="chatroom";  //消息话题
+    @Value("${server.ip}")
+    private String server_ip;  //="192.168.0.12";  //服务器ip地址
+    @Value("${server.kafka.port}")
+    private String server_port;   //="9092";  //服务器端口
+    @Value("${message.topic}")
+    private String topic;   //="chatroom";  //消息话题
     private userStat user=new userStat();  //当前客户端的用户信息
     // 状态显示的标签
     private JLabel send_num=new JLabel();  //消息发送数目
@@ -40,7 +53,41 @@ public class ChatClient extends JFrame {
         if(x>=0&&y>=0) return true;
         return false;
     }
-    public ChatClient() throws UnknownHostException {
+    public static Properties readConfig() throws IOException {
+        Properties props = new Properties();
+        InputStream fis = ChatClient.class.getClassLoader().getResourceAsStream("config.properties");
+        props.load(fis);
+        fis.close();
+        return props;
+    }
+    public void postConstruct() throws IOException {
+        //可视化组件外的功能组件设置
+        //设置ip地址
+        try {
+            ip=InetAddress.getLocalHost().getHostAddress().toString();
+        } catch (UnknownHostException e) {
+            ip="0.0.0.0";  //未知ip
+            throw new RuntimeException(e);
+        }
+        Properties config=readConfig();
+        server_ip= config.getProperty("server.ip");
+        server_port=config.getProperty("server.kafka.port");
+        topic=config.getProperty("message.topic");
+        username=config.getProperty("message.initName");
+
+        //发送器和接收器的属性
+        Properties message_properties = new Properties();
+        message_properties.setProperty("server_ip",server_ip);
+        message_properties.setProperty("server_port",server_port);
+        message_properties.setProperty("topic",topic);
+        //添加发送器
+        sender=new Sender(message_properties);
+        rec=new reciver(chatArea,message_properties);
+        rec.start();
+        name_input.setText(ip);
+    }
+
+    public ChatClient() throws IOException {
         setTitle("CrazyChat");
         setSize(400, 300);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -187,28 +234,8 @@ public class ChatClient extends JFrame {
         add(statusPanel);
         add(ChatPanel);
         add(inputPanel);
+        postConstruct();  //构造gui组件之外的配置
 
-
-
-        //add(statusPanel);
-
-        //设置ip地址
-        try {
-            ip=InetAddress.getLocalHost().getHostAddress().toString();
-        } catch (UnknownHostException e) {
-            ip="0.0.0.0";  //未知ip
-            throw new RuntimeException(e);
-        }
-        //发送器和接收器的属性
-        Properties message_properties = new Properties();
-        message_properties.setProperty("server_ip",server_ip);
-        message_properties.setProperty("server_port",server_port);
-        message_properties.setProperty("topic",topic);
-        //添加发送器
-        sender=new Sender(message_properties);
-        rec=new reciver(chatArea,message_properties);
-        rec.start();
-        name_input.setText(ip);
     }
 
     private void sendMessage() throws UnknownHostException {
@@ -252,6 +279,8 @@ public class ChatClient extends JFrame {
                 try {
                     new ChatClient().setVisible(true);
                 } catch (UnknownHostException e) {
+                    throw new RuntimeException(e);
+                } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             }
