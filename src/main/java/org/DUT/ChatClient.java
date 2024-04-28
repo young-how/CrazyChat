@@ -1,5 +1,7 @@
 package org.DUT;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 
 import javax.annotation.PostConstruct;
@@ -14,13 +16,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.LocalDate;
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-import static com.sun.management.VMOption.Origin.CONFIG_FILE;
-
-
+@Data
 public class ChatClient extends JFrame {
     private JTextArea chatArea;
     private JTextField inputField;
@@ -29,33 +28,27 @@ public class ChatClient extends JFrame {
     private String username;
     private Sender sender;
     private reciver rec;
+    private httpRequestor requestor;  //请求发送器
     private boolean minmum=false;
     private String ip;   //当前客户端ip地址
-    @Value("${server.ip}")
     private String server_ip;  //="192.168.0.12";  //服务器ip地址
-    @Value("${server.kafka.port}")
     private String server_port;   //="9092";  //服务器端口
-    @Value("${message.topic}")
     private String topic;   //="chatroom";  //消息话题
     private userStat user=new userStat();  //当前客户端的用户信息
     // 状态显示的标签
-    private JLabel send_num=new JLabel();  //消息发送数目
+    JPanel statusPanel;
+    private JLabel send_num=new JLabel("-");  //消息发送数目
     private JLabel score=new JLabel("-");  //分数
     private JLabel level=new JLabel("-");  //等级
     private JLabel rank=new JLabel("-");   //积分排名
     private JLabel active_num=new JLabel("-");   //活跃人数
+    private String Date= LocalDate.now().toString();  //今天的日期
 
-    ExecutorService executor = Executors.newFixedThreadPool(5);
-    Runnable send_task; //消息发送任务
-    private static int mouseX, mouseY;
-    private static int windowX, windowY;
-    public boolean In_bound(int x,int y){
-        if(x>=0&&y>=0) return true;
-        return false;
-    }
     public static Properties readConfig() throws IOException {
         Properties props = new Properties();
-        InputStream fis = ChatClient.class.getClassLoader().getResourceAsStream("config.properties");
+        //InputStream fis = ChatClient.class.getClassLoader().getResourceAsStream("config.properties");
+        InputStream fis = new FileInputStream("config.properties");  //打包专用
+        //InputStream fis = new FileInputStream("C:\\younghow\\gitworspace\\CrazyChat2\\src\\main\\resources\\config.properties");  //idea开发专用
         props.load(fis);
         fis.close();
         return props;
@@ -70,7 +63,7 @@ public class ChatClient extends JFrame {
             throw new RuntimeException(e);
         }
         Properties config=readConfig();
-        server_ip= config.getProperty("server.ip");
+        server_ip= config.getProperty("server.kafka.ip");
         server_port=config.getProperty("server.kafka.port");
         topic=config.getProperty("message.topic");
         username=config.getProperty("message.initName");
@@ -85,6 +78,9 @@ public class ChatClient extends JFrame {
         rec=new reciver(chatArea,message_properties);
         rec.start();
         name_input.setText(ip);
+        //添加http发送器
+        requestor=new httpRequestor(config,statusPanel,user);  //初始化
+        user=requestor.getNewest_user();  //获取请求器中得到的最新用户
     }
 
     public ChatClient() throws IOException {
@@ -94,7 +90,7 @@ public class ChatClient extends JFrame {
         // 将窗体设置为半透明
         setUndecorated(true); // 隐藏边框
         setBackground(new Color(255, 255, 255, 0)); // 设置背景颜色为半透明黑色
-        setOpacity((float)1);
+        setOpacity((float)0.8);
         //设置窗口始终置顶
         setAlwaysOnTop(true);
         // 设置窗体位置为右下角
@@ -110,6 +106,8 @@ public class ChatClient extends JFrame {
         closeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                String context=chatArea.getText();  //获取文本信息
+                rec.appendMessage(context);   //保存聊天框
                 dispose(); // 关闭窗口
                 System.exit(0); // 结束程序
             }
@@ -158,6 +156,8 @@ public class ChatClient extends JFrame {
                     sendMessage();
                 } catch (UnknownHostException ex) {
                     throw new RuntimeException(ex);
+                } catch (JsonProcessingException ex) {
+                    throw new RuntimeException(ex);
                 }
             }
         });
@@ -173,6 +173,8 @@ public class ChatClient extends JFrame {
                     try {
                         sendMessage();
                     } catch (UnknownHostException ex) {
+                        throw new RuntimeException(ex);
+                    } catch (JsonProcessingException ex) {
                         throw new RuntimeException(ex);
                     }
                 }
@@ -202,17 +204,23 @@ public class ChatClient extends JFrame {
         titlePanel.add(closeButton);
 
         //状态显示栏
-        JPanel statusPanel = new JPanel(new FlowLayout());
+        statusPanel = new JPanel(new FlowLayout());
+        //statusPanel.setLayout(new BoxLayout(statusPanel, BoxLayout.X_AXIS));
         statusPanel.setPreferredSize(new Dimension(statusPanel.getPreferredSize().width, 17));
         statusPanel.add(new JLabel("发言数: "));
+        send_num.setPreferredSize(new Dimension(30, 17));
         statusPanel.add(send_num);
         statusPanel.add(new JLabel("积分: "));
+        score.setPreferredSize(new Dimension(30, 17));
         statusPanel.add(score);
         statusPanel.add(new JLabel("等级: "));
+        level.setPreferredSize(new Dimension(30, 17));
         statusPanel.add(level);
         statusPanel.add(new JLabel("排名: "));
+        rank.setPreferredSize(new Dimension(30, 17));
         statusPanel.add(rank);
         statusPanel.add(new JLabel("活跃人数: "));
+        active_num.setPreferredSize(new Dimension(30, 17));
         statusPanel.add(active_num);
         //文本框显示区域
         JScrollPane ChatPanel=new JScrollPane(chatArea);
@@ -234,18 +242,27 @@ public class ChatClient extends JFrame {
         add(statusPanel);
         add(ChatPanel);
         add(inputPanel);
-        postConstruct();  //构造gui组件之外的配置
-
+        try{
+            postConstruct();  //构造gui组件之外的配置
+        }
+        catch (RuntimeException e){
+            chatArea.append("系统消息：获取与服务器的初始连接时发生异常，请联系管理员或更新软件！！！");
+        }
     }
 
-    private void sendMessage() throws UnknownHostException {
+    private void sendMessage() throws UnknownHostException, JsonProcessingException {
         String message = inputField.getText();
+        //判别是否可能有特殊字符
+        if(message.contains("#")){
+            sender.send(message,user);
+        }
         String name = name_input.getText();
         if(name==""){
             InetAddress localHost = InetAddress.getLocalHost();
             sender.setUserName(localHost.getHostAddress());  //将ip地址设置为用户名
         }
         else{
+            user.setName(name);
             sender.setUserName(name);
         }
         if(message.length()==0) return;
@@ -255,6 +272,8 @@ public class ChatClient extends JFrame {
             sender.send(message_info);
             inputField.setText("");
         }
+        requestor.sendMessage(user); //向服务器发送请求
+        user=requestor.getNewest_user();  //获取最新的对象
         repaint();
     }
     //带控制信息的信息发送
@@ -277,53 +296,18 @@ public class ChatClient extends JFrame {
             @Override
             public void run() {
                 try {
-                    new ChatClient().setVisible(true);
+                    ChatClient win=new ChatClient();
+                    win.setVisible(true);
                 } catch (UnknownHostException e) {
                     throw new RuntimeException(e);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
+                catch (RuntimeException e){
+                    System.out.println(e);
+                }
             }
         });
     }
 
-    public JTextArea getChatArea() {
-        return chatArea;
-    }
-
-    public void setChatArea(JTextArea chatArea) {
-        this.chatArea = chatArea;
-    }
-
-    public JTextField getInputField() {
-        return inputField;
-    }
-
-    public void setInputField(JTextField inputField) {
-        this.inputField = inputField;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public Sender getSender() {
-        return sender;
-    }
-
-    public void setSender(Sender sender) {
-        this.sender = sender;
-    }
-
-    public reciver getRec() {
-        return rec;
-    }
-
-    public void setRec(reciver rec) {
-        this.rec = rec;
-    }
 }

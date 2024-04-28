@@ -15,10 +15,13 @@ public class userStat {
     private int message_num;  //发言数目
     private int score;  //积分
     private int level;  //等级
+    private String title;  //称号
     private int win_game_num;
     private int game_num;
     private List<String> reward;
     private  boolean isActive;  //是否是活跃状态
+    private  Long rank;  //积分排名
+    private  Long activeNum;  //活跃人数
     userStat(){
         //设置mac地址
         try {

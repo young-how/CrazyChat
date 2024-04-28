@@ -13,6 +13,7 @@ public class Sender extends Thread{
     private String ip;
     private String port;
     private String topic_name;
+    private String Command_line;
 
     public String getUserName() {
         return userName;
@@ -30,6 +31,7 @@ public class Sender extends Thread{
         port=init_param.getProperty("server_port");
         topic_name=init_param.getProperty("topic");
         userName=ip;
+        Command_line="Command_line";  //命令队列
         Properties properties = new Properties();
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, ip+":"+port);
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
@@ -43,5 +45,12 @@ public class Sender extends Thread{
         };
         executor.execute(send_task);
     }
-
+    public void send(String info,userStat user){
+        //带状态的消息发送，用于给服务器发送指令
+        Runnable send_task=()->{
+            ProducerRecord<String, String> record = new ProducerRecord<>(Command_line,  user.getId()+":"+info);  //给服务器发送，根据id发送指令
+            kafkaProducer.send(record);
+        };
+        executor.execute(send_task);
+    }
 }
