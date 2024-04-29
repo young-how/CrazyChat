@@ -60,6 +60,15 @@ public class reciver extends Thread{
             e.printStackTrace();
         }
     }
+    // 滚动 JTextArea 到底部
+    private static void scrollTextAreaToBottom(JTextArea textArea) {
+        textArea.setCaretPosition(textArea.getDocument().getLength());
+//        if(textArea.getDocument().getLength()-textArea.getCaretPosition()<20){
+//            textArea.setCaretPosition(textArea.getDocument().getLength());
+//        }
+        //
+        // textArea.getCaretPosition();
+    }
     public void run(){
         String info;
         kafkaConsumer.subscribe(Arrays.asList(topic_name));
@@ -70,7 +79,8 @@ public class reciver extends Thread{
                     info=record.value();
                     control_order_process(info);
                     messageWin.append(info);
-                    Thread.sleep(200); // 线程休眠1秒
+                    scrollTextAreaToBottom(messageWin);   //自动下拉到最下方
+                    Thread.sleep(20); // 线程休眠1秒
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
