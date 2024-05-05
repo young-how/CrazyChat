@@ -5,48 +5,80 @@ import java.net.SocketException;
 import java.util.Enumeration;
 
 import javax.swing.*;
+import javax.swing.text.*;
 import java.awt.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public class test extends JFrame {
-
-    public test() {
-        setTitle("Vertical Panels Example");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
-
-        // 创建四个面板
-        JPanel panel1 = new JPanel();
-        JPanel panel2 = new JPanel();
-        JPanel panel3 = new JPanel();
-        JPanel panel4 = new JPanel();
-
-        // 设置面板的背景颜色
-        panel1.setBackground(Color.RED);
-        panel2.setBackground(Color.GREEN);
-        panel3.setBackground(Color.BLUE);
-        panel4.setBackground(Color.YELLOW);
-
-        // 将面板添加到窗口中
-        add(panel1);
-        add(panel2);
-        add(panel3);
-        add(panel4);
-
-        // 设置面板填充横向窗口
-        panel1.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panel2.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panel3.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panel4.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        pack();
-        setLocationRelativeTo(null); // 居中显示
-    }
+public class test {
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            test example = new test();
-            example.setVisible(true);
-        });
+        JFrame frame = new JFrame("TextPane Example");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        JTextPane textPane = new JTextPane();
+        textPane.setEditable(false); // 设置为不可编辑，以免用户输入
+
+        // 启用自动换行
+        textPane.setEditorKit(new MyEditorKit());
+
+        // 添加一些文本
+        appendToPane(textPane, "test。", Color.BLACK);
+
+        frame.add(new JScrollPane(textPane), BorderLayout.CENTER);
+        frame.setSize(400, 300);
+        frame.setVisible(true);
+    }
+
+    private static void appendToPane(JTextPane textPane, String text, Color color) {
+        StyleContext sc = StyleContext.getDefaultStyleContext();
+        AttributeSet aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, color);
+
+        int len = textPane.getDocument().getLength();
+        textPane.setCaretPosition(len);
+        textPane.setCharacterAttributes(aset, false);
+        textPane.replaceSelection(text);
+    }
+
+    static class MyEditorKit extends StyledEditorKit {
+        public ViewFactory getViewFactory() {
+            return new WrapColumnFactory();
+        }
+    }
+
+    static class WrapColumnFactory implements ViewFactory {
+        public View create(Element elem) {
+            String kind = elem.getName();
+            if (kind != null && kind.equals(AbstractDocument.ContentElementName)) {
+                return new WrapLabelView(elem);
+            } else if (kind != null && kind.equals(AbstractDocument.ParagraphElementName)) {
+                return new ParagraphView(elem);
+            } else if (kind != null && kind.equals(AbstractDocument.SectionElementName)) {
+                return new BoxView(elem, View.Y_AXIS);
+            } else if (kind != null && kind.equals(StyleConstants.ComponentElementName)) {
+                return new ComponentView(elem);
+            } else if (kind != null && kind.equals(StyleConstants.IconElementName)) {
+                return new IconView(elem);
+            }
+            return new LabelView(elem);
+        }
+    }
+
+    static class WrapLabelView extends LabelView {
+        public WrapLabelView(Element elem) {
+            super(elem);
+        }
+
+        public float getMinimumSpan(int axis) {
+            switch (axis) {
+                case View.X_AXIS:
+                    return 0;
+                case View.Y_AXIS:
+                    return super.getMinimumSpan(axis);
+                default:
+                    throw new IllegalArgumentException("Invalid axis: " + axis);
+            }
+        }
     }
 }
 

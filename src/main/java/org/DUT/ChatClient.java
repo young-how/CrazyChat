@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 
 import javax.annotation.PostConstruct;
 import javax.swing.*;
+import javax.swing.text.StyledEditorKit;
+import javax.swing.text.ViewFactory;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -18,10 +20,14 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDate;
 import java.util.Properties;
+import javax.swing.*;
+import javax.swing.text.*;
+import java.awt.*;
 
 @Data
 public class ChatClient extends JFrame {
-    private JTextArea chatArea;
+    //private JTextArea chatArea;  //老版本，不支持富文本
+    private JTextPane chatArea;  //新版本，支持富文本和图片
     private JTextField inputField;
     private JTextField name_input;
     @Value("${message.initName}")
@@ -43,17 +49,19 @@ public class ChatClient extends JFrame {
     private JLabel rank=new JLabel("-");   //积分排名
     private JLabel active_num=new JLabel("-");   //活跃人数
     private String Date= LocalDate.now().toString();  //今天的日期
+    private Style userStyle;  //用户文字主题
+    private Style sysStyle;  //用户文字主题
 
     public static Properties readConfig() throws IOException {
         Properties props = new Properties();
         //InputStream fis = ChatClient.class.getClassLoader().getResourceAsStream("config.properties");
-        InputStream fis = new FileInputStream("config.properties");  //打包专用
-        //InputStream fis = new FileInputStream("C:\\younghow\\gitworspace\\CrazyChat2\\src\\main\\resources\\config.properties");  //idea开发专用
+        //InputStream fis = new FileInputStream("config.properties");  //打包专用
+        InputStream fis = new FileInputStream("C:\\younghow\\gitworkspace\\CrazyChat\\src\\main\\resources\\config.properties");  //idea开发专用
         props.load(fis);
         fis.close();
         return props;
     }
-    public void postConstruct() throws IOException {
+    public void postConstruct() {
         //可视化组件外的功能组件设置
         //设置ip地址
         try {
@@ -62,7 +70,12 @@ public class ChatClient extends JFrame {
             ip="0.0.0.0";  //未知ip
             throw new RuntimeException(e);
         }
-        Properties config=readConfig();
+        Properties config= null;
+        try {
+            config = readConfig();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         server_ip= config.getProperty("server.kafka.ip");
         server_port=config.getProperty("server.kafka.port");
         topic=config.getProperty("message.topic");
@@ -73,17 +86,32 @@ public class ChatClient extends JFrame {
         message_properties.setProperty("server_ip",server_ip);
         message_properties.setProperty("server_port",server_port);
         message_properties.setProperty("topic",topic);
+        message_properties.setProperty("user_id",user.getId());
         //添加发送器
         sender=new Sender(message_properties);
         rec=new reciver(chatArea,message_properties);
         rec.start();
         name_input.setText(ip);
         //添加http发送器
-        requestor=new httpRequestor(config,statusPanel,user);  //初始化
+        try{
+            requestor=new httpRequestor(config,statusPanel,user);  //初始化
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
         user=requestor.getNewest_user();  //获取请求器中得到的最新用户
+        //设置用户文字可视化主题
+        userStyle= chatArea.addStyle("userStyle", null);
+        StyleConstants.setForeground(userStyle, Color.BLACK); // 设置文本颜色
+        StyleConstants.setFontSize(userStyle, 12); // 设置字体大小
+        StyleConstants.setBold(userStyle, false); // 设置文本加粗
+        //设置系统消息可视化主题
+        sysStyle= chatArea.addStyle("userStyle", null);
+        StyleConstants.setForeground(sysStyle, Color.RED); // 设置文本颜色
+        StyleConstants.setFontSize(sysStyle, 16); // 设置字体大小
+        StyleConstants.setBold(sysStyle, true); // 设置文本加粗
     }
 
-    public ChatClient() throws IOException {
+    public ChatClient(){
         setTitle("CrazyChat");
         setSize(400, 300);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -139,9 +167,15 @@ public class ChatClient extends JFrame {
         });
 
 
-        chatArea = new JTextArea();
-        chatArea.setEditable(false);
-        chatArea.setLineWrap(true); // 设置自动换行
+//        chatArea = new JTextArea();
+//        chatArea.setEditable(false);
+//        chatArea.setLineWrap(true); // 设置自动换行
+
+        //新版本聊天框
+        chatArea=new JTextPane();
+        chatArea.setEditable(false); // 设置为不可编辑，以免用户输入
+        Font defaultFont = new Font("Arial", Font.PLAIN, 12);
+        chatArea.setFont(defaultFont);
 
 
         inputField = new JTextField();
@@ -246,7 +280,17 @@ public class ChatClient extends JFrame {
             postConstruct();  //构造gui组件之外的配置
         }
         catch (RuntimeException e){
-            chatArea.append("系统消息：获取与服务器的初始连接时发生异常，请联系管理员或更新软件！！！");
+            //chatArea.append("系统消息：获取与服务器的初始连接时发生异常，请联系管理员或更新软件！！！");
+            appendMessage("系统消息：获取与服务器的初始连接时发生异常，请联系管理员或更新软件！！！",sysStyle);
+        }
+    }
+    private void appendMessage(String message,Style style) {
+        StyledDocument doc=chatArea.getStyledDocument();
+        try {
+            doc.insertString(doc.getLength(), message, style);
+        }
+        catch (BadLocationException e){
+            e.printStackTrace();
         }
     }
 
@@ -256,6 +300,11 @@ public class ChatClient extends JFrame {
         if(message.contains("#")){
             sender.send(message,user);
         }
+//        if(message.contains("@")){
+//            //仅服务器可见的发言
+//            sender.send(message,user);
+//            return;
+//        }
         String name = name_input.getText();
         if(name==""){
             InetAddress localHost = InetAddress.getLocalHost();
@@ -268,6 +317,7 @@ public class ChatClient extends JFrame {
         if(message.length()==0) return;
         if (!message.isEmpty()) {
             //chatArea.append(message + "\n");
+            //appendMessage(message + "\n",userStyle);
             String message_info=message+ "\n";
             sender.send(message_info);
             inputField.setText("");
@@ -298,12 +348,7 @@ public class ChatClient extends JFrame {
                 try {
                     ChatClient win=new ChatClient();
                     win.setVisible(true);
-                } catch (UnknownHostException e) {
-                    throw new RuntimeException(e);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                catch (RuntimeException e){
+                } catch (RuntimeException e){
                     System.out.println(e);
                 }
             }
