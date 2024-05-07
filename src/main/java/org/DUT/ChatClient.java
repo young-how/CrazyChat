@@ -23,6 +23,7 @@ import java.util.Properties;
 import javax.swing.*;
 import javax.swing.text.*;
 import java.awt.*;
+import java.util.concurrent.*;
 
 @Data
 public class ChatClient extends JFrame {
@@ -51,12 +52,13 @@ public class ChatClient extends JFrame {
     private String Date= LocalDate.now().toString();  //今天的日期
     private Style userStyle;  //用户文字主题
     private Style sysStyle;  //用户文字主题
+    ThreadPoolExecutor pool = new ThreadPoolExecutor(2, 3, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(5));
 
     public static Properties readConfig() throws IOException {
         Properties props = new Properties();
         //InputStream fis = ChatClient.class.getClassLoader().getResourceAsStream("config.properties");
         //InputStream fis = new FileInputStream("config.properties");  //打包专用
-        InputStream fis = new FileInputStream("C:\\younghow\\gitworkspace\\CrazyChat\\src\\main\\resources\\config.properties");  //idea开发专用
+        InputStream fis = new FileInputStream("C:\\younghow\\gitworspace\\CrazyChat2\\src\\main\\resources\\config.properties");  //idea开发专用
         props.load(fis);
         fis.close();
         return props;
@@ -322,8 +324,16 @@ public class ChatClient extends JFrame {
             sender.send(message_info);
             inputField.setText("");
         }
-        requestor.sendMessage(user); //向服务器发送请求
-        user=requestor.getNewest_user();  //获取最新的对象
+        Runnable httpTask=()->
+        {
+            try {
+                requestor.sendMessage(user); //向服务器发送请求
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+            user=requestor.getNewest_user();  //获取最新的对象
+        };
+        pool.execute(httpTask);  //并发请求服务器
         repaint();
     }
     //带控制信息的信息发送
