@@ -2,6 +2,8 @@ package org.DUT;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.Data;
+import org.DUT.utils.ChatArea;
+import org.DUT.utils.Constants;
 import org.springframework.beans.factory.annotation.Value;
 
 import javax.annotation.PostConstruct;
@@ -50,17 +52,17 @@ public class ChatClient extends JFrame {
     private JLabel rank=new JLabel("-");   //积分排名
     private JLabel active_num=new JLabel("-");   //活跃人数
     private String Date= LocalDate.now().toString();  //今天的日期
-    private Style userStyle;  //用户文字主题
-    private Style sysStyle;  //用户文字主题
     ThreadPoolExecutor pool = new ThreadPoolExecutor(2, 3, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(5));
 
-    public static Properties readConfig() throws IOException {
+    public Properties readConfig() throws IOException {
         Properties props = new Properties();
-        //InputStream fis = ChatClient.class.getClassLoader().getResourceAsStream("config.properties");
-        //InputStream fis = new FileInputStream("config.properties");  //打包专用
-        InputStream fis = new FileInputStream("C:\\younghow\\gitworspace\\CrazyChat2\\src\\main\\resources\\config.properties");  //idea开发专用
+        System.out.println("读取配置");
+        InputStream fis = this.getClass().getClassLoader().getResourceAsStream("config.properties");
+//        System.out.println(filepath);
+//        InputStream fis = new FileInputStream(resourceAsStream);  //idea开发专用
         props.load(fis);
         fis.close();
+        System.out.println("读取配置成功");
         return props;
     }
     public void postConstruct() {
@@ -68,6 +70,7 @@ public class ChatClient extends JFrame {
         //设置ip地址
         try {
             ip=InetAddress.getLocalHost().getHostAddress().toString();
+            System.out.println("设置ip");
         } catch (UnknownHostException e) {
             ip="0.0.0.0";  //未知ip
             throw new RuntimeException(e);
@@ -82,7 +85,7 @@ public class ChatClient extends JFrame {
         server_port=config.getProperty("server.kafka.port");
         topic=config.getProperty("message.topic");
         username=config.getProperty("message.initName");
-
+        System.out.println(server_ip);
         //发送器和接收器的属性
         Properties message_properties = new Properties();
         message_properties.setProperty("server_ip",server_ip);
@@ -101,16 +104,6 @@ public class ChatClient extends JFrame {
             throw new RuntimeException(e);
         }
         user=requestor.getNewest_user();  //获取请求器中得到的最新用户
-        //设置用户文字可视化主题
-        userStyle= chatArea.addStyle("userStyle", null);
-        StyleConstants.setForeground(userStyle, Color.BLACK); // 设置文本颜色
-        StyleConstants.setFontSize(userStyle, 12); // 设置字体大小
-        StyleConstants.setBold(userStyle, false); // 设置文本加粗
-        //设置系统消息可视化主题
-        sysStyle= chatArea.addStyle("userStyle", null);
-        StyleConstants.setForeground(sysStyle, Color.RED); // 设置文本颜色
-        StyleConstants.setFontSize(sysStyle, 16); // 设置字体大小
-        StyleConstants.setBold(sysStyle, true); // 设置文本加粗
     }
 
     public ChatClient(){
@@ -125,8 +118,12 @@ public class ChatClient extends JFrame {
         setAlwaysOnTop(true);
         // 设置窗体位置为右下角
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        setLocation(screenSize.width - getWidth(), screenSize.height - getHeight()-50);
-        // 添加关闭按钮
+        //根据系统设置摆放位置
+        if(System.getProperty("os.name").startsWith("Mac")){
+            setLocation(screenSize.width - getWidth()-20, screenSize.height - getHeight()-100);
+        }else{
+            setLocation(screenSize.width - getWidth(), screenSize.height - getHeight()-50);        }
+         // 添加关闭按钮
         JButton closeButton = new JButton("*");
         closeButton.setPreferredSize(new Dimension(40, 17)); // 设置高度为 30
         JButton minButton = new JButton("-");
@@ -174,7 +171,7 @@ public class ChatClient extends JFrame {
 //        chatArea.setLineWrap(true); // 设置自动换行
 
         //新版本聊天框
-        chatArea=new JTextPane();
+        chatArea= Constants.charArea;
         chatArea.setEditable(false); // 设置为不可编辑，以免用户输入
         Font defaultFont = new Font("Arial", Font.PLAIN, 12);
         chatArea.setFont(defaultFont);
@@ -278,12 +275,13 @@ public class ChatClient extends JFrame {
         add(statusPanel);
         add(ChatPanel);
         add(inputPanel);
+        //System.out.println(11111);
         try{
             postConstruct();  //构造gui组件之外的配置
         }
         catch (RuntimeException e){
             //chatArea.append("系统消息：获取与服务器的初始连接时发生异常，请联系管理员或更新软件！！！");
-            appendMessage("系统消息：获取与服务器的初始连接时发生异常，请联系管理员或更新软件！！！",sysStyle);
+            appendMessage(Constants.SYS_ERROR,chatArea.getStyle(Constants.SYS_STYLE));
         }
     }
     private void appendMessage(String message,Style style) {

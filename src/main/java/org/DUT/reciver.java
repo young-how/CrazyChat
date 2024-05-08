@@ -1,5 +1,6 @@
 package org.DUT;
 
+import org.DUT.utils.Constants;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -33,8 +34,6 @@ public class reciver extends Thread{
     private KafkaConsumer<String, String> kafkaConsumer; //消费者
     private HashSet<String> control_order=new HashSet<>();  //控制命令
     private String Date= LocalDate.now().toString();  //今天的日期
-    private Style userStyle;  //用户文字主题
-    private Style sysStyle;  //用户文字主题
     public reciver(Object win,Properties init_param){
         ip=init_param.getProperty("server_ip");
         port=init_param.getProperty("server_port");
@@ -50,16 +49,6 @@ public class reciver extends Thread{
         kafkaConsumer = new KafkaConsumer<>(properties);
         //加入控制台指令
         control_order.add("/clean");
-        //设置用户文字可视化主题
-        userStyle= messageWin.addStyle("userStyle", null);
-        StyleConstants.setForeground(userStyle, Color.BLACK); // 设置文本颜色
-        StyleConstants.setFontSize(userStyle, 12); // 设置字体大小
-        StyleConstants.setBold(userStyle, false); // 设置文本加粗
-        //设置系统消息可视化主题
-        sysStyle= messageWin.addStyle("userStyle", null);
-        StyleConstants.setForeground(sysStyle, Color.RED); // 设置文本颜色
-        StyleConstants.setFontSize(sysStyle, 16); // 设置字体大小
-        StyleConstants.setBold(sysStyle, true); // 设置文本加粗
     }
     /*
      * @param message:
@@ -102,7 +91,7 @@ public class reciver extends Thread{
                     if(info.find()){
                         //用红色标记高亮显示
                         String usr_info=info.group(1);  //提取出专门给该用户
-                        insertMessage(usr_info+"\n",sysStyle);
+                        insertMessage(usr_info+"\n",messageWin.getStyle(Constants.SECRE_TSTYLE));
                     }
 
                 }
@@ -162,11 +151,12 @@ public class reciver extends Thread{
             ConsumerRecords<String, String> consumerRecords = kafkaConsumer.poll(Duration.ofSeconds(2));
             for (ConsumerRecord<String, String> record : consumerRecords) {
                 try {
-                    info=record.value();
-                    info=control_order_process(info);
-                    if(!info.equals("")){
+                    String infos=control_order_process(record.value());
+                    if(!infos.equals("")){
                         //messageWin.append(info);
-                        insertMessage(info,userStyle);
+                        Style myStyle = infos.startsWith(Constants.SYS_TALK)?
+                                messageWin.getStyle(Constants.SYS_STYLE):messageWin.getStyle(Constants.USER_STYLE);
+                        insertMessage(infos,myStyle);
                     }
                     //scrollTextAreaToBottom(messageWin);   //自动下拉到最下方
                     //scrollJTextPaneToBottom(messageWin);
