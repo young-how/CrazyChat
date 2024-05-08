@@ -1,4 +1,4 @@
-# CrazyChat  ![](https://img.shields.io/badge/license-MIT-blue) ![](https://img.shields.io/badge/jdk-1.8%2F17-green) ![](https://img.shields.io/badge/kafka-3.70-blue) ![](https://img.shields.io/badge/redis-5.0.7-red)
+# CrazyChat  ![](https://img.shields.io/badge/license-MIT-blue) ![](https://img.shields.io/badge/jdk-1.8%2F17-green) ![](https://img.shields.io/badge/Kafka-3.70-blue) ![](https://img.shields.io/badge/Redis-5.0.7-red) ![](https://img.shields.io/badge/Spring-6.1.5-lightgreen)
 
 CrazyChat是一个适用于局域网/公网的公屏聊天软件，内置了多种支持用户互动的游戏。具备隐蔽性和匿名性，适合上班划水+工位摸鱼。
 + 隐蔽性： 界面不起眼，支持一键清屏与对话框伸缩，仅接收实时消息，让摸鱼更具隐蔽性。
