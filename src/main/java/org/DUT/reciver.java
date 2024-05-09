@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 public class reciver extends Thread{
     //private JTextArea messageWin;  //旧版本
     private JTextPane messageWin;
+    private StyledDocument doc;
     private String ip;
     private String port;
     private String topic_name;
@@ -34,11 +35,13 @@ public class reciver extends Thread{
     private KafkaConsumer<String, String> kafkaConsumer; //消费者
     private HashSet<String> control_order=new HashSet<>();  //控制命令
     private String Date= LocalDate.now().toString();  //今天的日期
+    private HashMap<String,Integer> insert_index=new HashMap<>();  //文本插入索引
     public reciver(Object win,Properties init_param){
         ip=init_param.getProperty("server_ip");
         port=init_param.getProperty("server_port");
         topic_name=init_param.getProperty("topic");
         messageWin=(JTextPane)win;
+        doc= messageWin.getStyledDocument();  //获取文档类型
         group_id=topic_name+id;
         user_id=init_param.getProperty("user_id");
         Properties properties = new Properties();
@@ -59,9 +62,22 @@ public class reciver extends Thread{
      * @date younghow younghow
      */
     private void insertMessage(String message, Style style) {
-        StyledDocument doc=messageWin.getStyledDocument();
+        //StyledDocument doc=messageWin.getStyledDocument();
         try {
             doc.insertString(doc.getLength(), message, style);
+        }
+        catch (BadLocationException e){
+            e.printStackTrace();
+        }
+    }
+    private void insertMessage(String message, int idx,String id,Style style) {
+        //带偏移量和id的消息插入
+        //StyledDocument doc=messageWin.getStyledDocument();
+        try {
+            int str_len=message.length();  //消息的长度
+            doc.insertString(idx, message, style);
+            idx+=str_len;
+            insert_index.put(id,idx);  //重构对应id的字符插入点
         }
         catch (BadLocationException e){
             e.printStackTrace();
@@ -74,7 +90,8 @@ public class reciver extends Thread{
             appendMessage(content);   //保存消息
             //清屏操作
             messageWin.setText("");
-            //将内容保存到文件中
+            //将待插入点的map也消除掉
+            insert_index.clear();
         }
         else if(order.contains("/toUser:")){
             //发送给特定的用户
@@ -86,11 +103,39 @@ public class reciver extends Thread{
                 if(usr_id.equals(user_id)){
                     //如果提取的消息和本机id一致，则保留消息，否则丢弃
                     String regex_info="@@(.*)&&";  //系统消息的模板
-                    Pattern pattern_info=Pattern.compile(regex_info);  //匹配系统消息
+                    Pattern pattern_info=Pattern.compile(regex_info, Pattern.DOTALL);  //匹配系统消息，包含换行字符
                     Matcher info=pattern_info.matcher(order);
                     if(info.find()){
                         //用红色标记高亮显示
                         String usr_info=info.group(1);  //提取出专门给该用户
+                        //处理消息中的断点信息
+                        if(usr_info.contains("/cutpoint_id:")){
+                            //处理断点信息
+                            String regex="/cutpoint_id:(.*)&&";  //提取id号码
+                            Pattern pr=Pattern.compile(regex);
+                            Matcher mr=pr.matcher(usr_info);  //匹配
+                            if(mr.find()){
+                                String content=messageWin.getText();  //保存消息
+                                String content_id= mr.group(1);//截取到内容的id
+                                String regex_content="@@(.*)/cutpoint_id:";
+                                if(!insert_index.containsKey(content_id)){
+                                    //没有匹配到插入点
+                                    //StyledDocument doc = messageWin.getStyledDocument();
+                                    int insert_ind=doc.getLength(); //最末端的标记
+                                    insert_index.put(content_id,insert_ind);  //保存插入点的标记
+                                }
+                                Pattern p2=Pattern.compile(regex_content, Pattern.DOTALL);
+                                Matcher m2=p2.matcher(order);  //匹配
+                                if(m2.find()){
+                                    //匹配到内容
+                                    String info_content=m2.group(1);
+                                    int idx=insert_index.get(content_id);  //获取插入点
+                                    insertMessage(info_content,idx,content_id,messageWin.getStyle(Constants.SECRE_TSTYLE));  //在对应的插入点插入消息
+                                }
+                                appendMessage(content);   //保存消息
+                            }
+                            return "";//丢弃了原来的消息
+                        }
                         insertMessage(usr_info+"\n",messageWin.getStyle(Constants.SECRE_TSTYLE));
                     }
 
@@ -99,6 +144,33 @@ public class reciver extends Thread{
             }
             order=""; //丢弃消息
         }
+//        if(order.contains("/cutpoint_id:")){
+//            //处理断点信息
+//            String regex="/cutpoint_id:(.*)&&";  //提取id号码
+//            Pattern p=Pattern.compile(regex);
+//            Matcher m=p.matcher(order);  //匹配
+//            if(m.find()){
+//                String content=messageWin.getText();  //保存消息
+//                String content_id= m.group(1);//截取到内容的id
+//                String regex_content="(.*)/cutpoint_id:";  //提取id号码
+//                if(!insert_index.containsKey(content_id)){
+//                    //没有匹配到插入点
+//                    //StyledDocument doc = messageWin.getStyledDocument();
+//                    int insert_ind=doc.getLength(); //最末端的标记
+//                    insert_index.put(content_id,insert_ind);  //保存插入点的标记
+//                }
+//                Pattern p2=Pattern.compile(regex_content);
+//                Matcher m2=p2.matcher(order);  //匹配
+//                if(m2.find()){
+//                    //匹配到内容
+//                    String info_content=m2.group(1);
+//                    int idx=insert_index.get(content_id);  //获取插入点
+//                    insertMessage(info_content,idx,content_id,messageWin.getStyle(Constants.SYS_STYLE));  //在对应的插入点插入消息
+//                }
+//                appendMessage(content);   //保存消息
+//            }
+//            order="";//丢弃了原来的消息
+//        }
         return order;
     }
     public void appendMessage(String text){

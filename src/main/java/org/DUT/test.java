@@ -12,23 +12,23 @@ import java.util.regex.Pattern;
 
 public class test {
 
-    public static void main(String[] args) {
-        JFrame frame = new JFrame("TextPane Example");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        JTextPane textPane = new JTextPane();
-        textPane.setEditable(false); // 设置为不可编辑，以免用户输入
-
-        // 启用自动换行
-        textPane.setEditorKit(new MyEditorKit());
-
-        // 添加一些文本
-        appendToPane(textPane, "test。", Color.BLACK);
-
-        frame.add(new JScrollPane(textPane), BorderLayout.CENTER);
-        frame.setSize(400, 300);
-        frame.setVisible(true);
-    }
+//    public static void main(String[] args) {
+//        JFrame frame = new JFrame("TextPane Example");
+//        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+//
+//        JTextPane textPane = new JTextPane();
+//        textPane.setEditable(false); // 设置为不可编辑，以免用户输入
+//
+//        // 启用自动换行
+//        textPane.setEditorKit(new MyEditorKit());
+//
+//        // 添加一些文本
+//        appendToPane(textPane, "test。", Color.BLACK);
+//
+//        frame.add(new JScrollPane(textPane), BorderLayout.CENTER);
+//        frame.setSize(400, 300);
+//        frame.setVisible(true);
+//    }
 
     private static void appendToPane(JTextPane textPane, String text, Color color) {
         StyleContext sc = StyleContext.getDefaultStyleContext();
@@ -78,6 +78,19 @@ public class test {
                 default:
                     throw new IllegalArgumentException("Invalid axis: " + axis);
             }
+        }
+    }
+
+    public static void main(String[] args) {
+        String text = "information:this is general \n speaking \n @@";
+        Pattern pattern = Pattern.compile("information:(.*?)@@", Pattern.DOTALL);
+        Matcher matcher = pattern.matcher(text);
+
+        if (matcher.find()) {
+            String result = matcher.group(1);
+            System.out.println("Result: " + result);
+        } else {
+            System.out.println("No match found");
         }
     }
 }
