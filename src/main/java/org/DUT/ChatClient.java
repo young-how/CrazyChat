@@ -2,12 +2,14 @@ package org.DUT;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.DUT.UI.InputField;
 import org.DUT.UI.StatusPanel;
 import org.DUT.UI.TitlePanel;
 import org.DUT.utils.ChatArea;
 import org.DUT.utils.Constants;
 import org.springframework.beans.factory.annotation.Value;
-
+import org.DUT.Sender;
 import javax.annotation.PostConstruct;
 import javax.swing.*;
 import javax.swing.text.StyledEditorKit;
@@ -33,7 +35,7 @@ import java.util.concurrent.*;
 public class ChatClient extends JFrame {
     //private JTextArea chatArea;  //老版本，不支持富文本
     private JTextPane chatArea;  //新版本，支持富文本和图片
-    private JTextField inputField;
+    private InputField inputField;
     private JTextField name_input;
     @Value("${message.initName}")
     private String username;
@@ -124,14 +126,11 @@ public class ChatClient extends JFrame {
         minButton.setPreferredSize(new Dimension(40, 17)); // 设置高度为 30
         JButton cleanButton = new JButton("~");  //清屏
         cleanButton.setPreferredSize(new Dimension(40, 17)); // 设置高度为 30
-        closeButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String context=chatArea.getText();  //获取文本信息
-                rec.appendMessage(context);   //保存聊天框
-                dispose(); // 关闭窗口
-                System.exit(0); // 结束程序
-            }
+        closeButton.addActionListener(e -> {
+            String context=chatArea.getText();  //获取文本信息
+            rec.appendMessage(context);   //保存聊天框
+            dispose(); // 关闭窗口
+            System.exit(0); // 结束程序
         });
         cleanButton.addActionListener(e -> {
             try {
@@ -144,10 +143,12 @@ public class ChatClient extends JFrame {
             if(minmum){
                 setSize(Constants.WIDTH, Constants.HEIGHT);
                 minmum=false;
+                minButton.setText("-");
             }
             else{
                 setSize(Constants.WIDTH, 25);
                 minmum=true;
+                minButton.setText("口");
             }
             setLocation(screenSize.width - getWidth()+Constants.LOCATION_X_ADD, screenSize.height - getHeight()+Constants.LOCATION_Y_ADD);
 
@@ -165,7 +166,7 @@ public class ChatClient extends JFrame {
         chatArea.setFont(defaultFont);
 
 
-        inputField = new JTextField();
+        inputField = InputField.getInstance();
         name_input= new JTextField();
         name_input.setColumns(10);
 
@@ -179,38 +180,12 @@ public class ChatClient extends JFrame {
                 throw new RuntimeException(ex);
             }
         });
-
-        inputField.addKeyListener(new KeyListener() {
-            @Override
-            public void keyTyped(KeyEvent e) {
-            }
-
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    try {
-                        sendMessage();
-                    } catch (UnknownHostException ex) {
-                        throw new RuntimeException(ex);
-                    } catch (JsonProcessingException ex) {
-                        throw new RuntimeException(ex);
-                    }
-                }
-            }
-
-            @Override
-            public void keyReleased(KeyEvent e) {
-            }
-        });
-
         //容器布局设置
         JPanel inputPanel = new JPanel(new BorderLayout());
         inputPanel.setPreferredSize(new Dimension(inputPanel.getPreferredSize().width, 25));
         inputPanel.add(inputField, BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
-
 //        setLayout(new BorderLayout());
-
         //顶部容器栏
         JPanel titlePanel = TitlePanel.getInstance();
         titlePanel.add(name_input);
@@ -240,7 +215,6 @@ public class ChatClient extends JFrame {
         add(statusPanel);
         add(ChatPanel);
         add(inputPanel);
-        //System.out.println(11111);
         try{
             postConstruct();  //构造gui组件之外的配置
         }
@@ -259,8 +233,10 @@ public class ChatClient extends JFrame {
         }
     }
 
-    private void sendMessage() throws UnknownHostException, JsonProcessingException {
+    public void sendMessage() throws UnknownHostException, JsonProcessingException {
         String message = inputField.getText();
+        inputField.cur_to_zero();
+        inputField.putMessage(message);
         //判别是否可能有特殊字符
         if(message.contains("#")){
             sender.send(message,user);
@@ -301,6 +277,7 @@ public class ChatClient extends JFrame {
     }
     //带控制信息的信息发送
     private void sendMessage(String control_order) throws UnknownHostException {
+        inputField.cur_to_zero();
         String name = name_input.getText();
         if(name==""){
             InetAddress localHost = InetAddress.getLocalHost();
@@ -314,10 +291,23 @@ public class ChatClient extends JFrame {
         repaint();
     }
 
+    private static volatile ChatClient chatClient;
+    public static ChatClient getInstance() {
+            if (null == chatClient) {
+                // 模拟在创建对象之前做一些准备工作
+                synchronized (ChatClient.class) {
+                    if(null == chatClient) {
+                        chatClient = new ChatClient();
+                    }
+                }
+            }
+        return chatClient;
+    }
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try {
-                ChatClient win=new ChatClient();
+                ChatClient win=ChatClient.getInstance();
                 win.setVisible(true);
             } catch (RuntimeException e){
                 System.out.println(e);

@@ -34,19 +34,14 @@ public class StatusPanel extends JPanel {
     }
     private static volatile JPanel statusPanel;
     public static JPanel getInstance() {
-        try {
             if (null == statusPanel) {
                 // 模拟在创建对象之前做一些准备工作
-                Thread.sleep(1000);
                 synchronized (StatusPanel.class) {
                     if(null == statusPanel) {
                         statusPanel = new StatusPanel();
                     }
                 }
             }
-        } catch (InterruptedException e) {
-            // TODO: handle exception
-        }
         return statusPanel;
     }
 }
