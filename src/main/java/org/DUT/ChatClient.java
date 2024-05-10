@@ -108,7 +108,7 @@ public class ChatClient extends JFrame {
 
     public ChatClient(){
         setTitle("CrazyChat");
-        setSize(400, 300);
+        setSize(Constants.WIDTH, Constants.HEIGHT);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         // 将窗体设置为半透明
         setUndecorated(true); // 隐藏边框
@@ -119,12 +119,9 @@ public class ChatClient extends JFrame {
         // 设置窗体位置为右下角
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         //根据系统设置摆放位置
-        if(System.getProperty("os.name").startsWith("Mac")){
-            setLocation(screenSize.width - getWidth()-20, screenSize.height - getHeight()-100);
-        }else{
-            setLocation(screenSize.width - getWidth(), screenSize.height - getHeight()-50);        }
-         // 添加关闭按钮
-        JButton closeButton = new JButton("*");
+        setLocation(screenSize.width - getWidth()+Constants.LOCATION_X_ADD, screenSize.height - getHeight()+Constants.LOCATION_Y_ADD);
+        // 添加关闭按钮
+        JButton closeButton = new JButton("x");
         closeButton.setPreferredSize(new Dimension(40, 17)); // 设置高度为 30
         JButton minButton = new JButton("-");
         minButton.setPreferredSize(new Dimension(40, 17)); // 设置高度为 30
@@ -153,15 +150,15 @@ public class ChatClient extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if(minmum){
-                    setSize(400, 300);
-                    setLocation(screenSize.width - getWidth(), screenSize.height - getHeight()-50);
+                    setSize(Constants.WIDTH, Constants.HEIGHT);
                     minmum=false;
                 }
                 else{
-                    setSize(400, 25);
-                    setLocation(screenSize.width - getWidth(), screenSize.height - getHeight()-50);
+                    setSize(Constants.WIDTH, 25);
                     minmum=true;
                 }
+                setLocation(screenSize.width - getWidth()+Constants.LOCATION_X_ADD, screenSize.height - getHeight()+Constants.LOCATION_Y_ADD);
+
             }
         });
 

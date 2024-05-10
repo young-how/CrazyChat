@@ -13,6 +13,11 @@ public class Constants {
     public static String SYS_ERROR = "系统消息：获取与服务器的初始连接时发生异常，请联系管理员或更新软件！！！";
     public static JTextPane charArea;
 
+    public static int WIDTH = System.getProperty("os.name").startsWith("Mac")?450:400;
+    public static int HEIGHT = System.getProperty("os.name").startsWith("Mac")?350:300;
+    public static int LOCATION_X_ADD = System.getProperty("os.name").startsWith("Mac")?-20:0;
+    public static int LOCATION_Y_ADD = System.getProperty("os.name").startsWith("Mac")?-100:-50;
+
     static {
         charArea = ChatArea.getInstance();
         //设置用户文字可视化主题
