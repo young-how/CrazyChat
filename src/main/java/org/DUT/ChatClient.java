@@ -2,6 +2,8 @@ package org.DUT;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.Data;
+import org.DUT.UI.StatusPanel;
+import org.DUT.UI.TitlePanel;
 import org.DUT.utils.ChatArea;
 import org.DUT.utils.Constants;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,11 +48,6 @@ public class ChatClient extends JFrame {
     private userStat user=new userStat();  //当前客户端的用户信息
     // 状态显示的标签
     JPanel statusPanel;
-    private JLabel send_num=new JLabel("-");  //消息发送数目
-    private JLabel score=new JLabel("-");  //分数
-    private JLabel level=new JLabel("-");  //等级
-    private JLabel rank=new JLabel("-");   //积分排名
-    private JLabel active_num=new JLabel("-");   //活跃人数
     private String Date= LocalDate.now().toString();  //今天的日期
     ThreadPoolExecutor pool = new ThreadPoolExecutor(2, 3, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(5));
 
@@ -136,30 +133,24 @@ public class ChatClient extends JFrame {
                 System.exit(0); // 结束程序
             }
         });
-        cleanButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    sendMessage("/clean");
-                } catch (UnknownHostException ex) {
-                    throw new RuntimeException(ex);
-                }
+        cleanButton.addActionListener(e -> {
+            try {
+                sendMessage("/clean");
+            } catch (UnknownHostException ex) {
+                throw new RuntimeException(ex);
             }
         });
-        minButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(minmum){
-                    setSize(Constants.WIDTH, Constants.HEIGHT);
-                    minmum=false;
-                }
-                else{
-                    setSize(Constants.WIDTH, 25);
-                    minmum=true;
-                }
-                setLocation(screenSize.width - getWidth()+Constants.LOCATION_X_ADD, screenSize.height - getHeight()+Constants.LOCATION_Y_ADD);
-
+        minButton.addActionListener(e -> {
+            if(minmum){
+                setSize(Constants.WIDTH, Constants.HEIGHT);
+                minmum=false;
             }
+            else{
+                setSize(Constants.WIDTH, 25);
+                minmum=true;
+            }
+            setLocation(screenSize.width - getWidth()+Constants.LOCATION_X_ADD, screenSize.height - getHeight()+Constants.LOCATION_Y_ADD);
+
         });
 
 
@@ -179,16 +170,13 @@ public class ChatClient extends JFrame {
         name_input.setColumns(10);
 
         JButton sendButton = new JButton("Send");
-        sendButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    sendMessage();
-                } catch (UnknownHostException ex) {
-                    throw new RuntimeException(ex);
-                } catch (JsonProcessingException ex) {
-                    throw new RuntimeException(ex);
-                }
+        sendButton.addActionListener(e -> {
+            try {
+                sendMessage();
+            } catch (UnknownHostException ex) {
+                throw new RuntimeException(ex);
+            } catch (JsonProcessingException ex) {
+                throw new RuntimeException(ex);
             }
         });
 
@@ -224,34 +212,14 @@ public class ChatClient extends JFrame {
 //        setLayout(new BorderLayout());
 
         //顶部容器栏
-        JPanel titlePanel = new JPanel(new FlowLayout());
-        titlePanel.setPreferredSize(new Dimension(titlePanel.getPreferredSize().width, 25));
-        titlePanel.add(new JLabel("CrazyChat"));
-        titlePanel.add(new JLabel("         name："));
+        JPanel titlePanel = TitlePanel.getInstance();
         titlePanel.add(name_input);
         titlePanel.add(cleanButton);
         titlePanel.add(minButton);
         titlePanel.add(closeButton);
 
         //状态显示栏
-        statusPanel = new JPanel(new FlowLayout());
-        //statusPanel.setLayout(new BoxLayout(statusPanel, BoxLayout.X_AXIS));
-        statusPanel.setPreferredSize(new Dimension(statusPanel.getPreferredSize().width, 17));
-        statusPanel.add(new JLabel("发言数: "));
-        send_num.setPreferredSize(new Dimension(30, 17));
-        statusPanel.add(send_num);
-        statusPanel.add(new JLabel("积分: "));
-        score.setPreferredSize(new Dimension(30, 17));
-        statusPanel.add(score);
-        statusPanel.add(new JLabel("等级: "));
-        level.setPreferredSize(new Dimension(30, 17));
-        statusPanel.add(level);
-        statusPanel.add(new JLabel("排名: "));
-        rank.setPreferredSize(new Dimension(30, 17));
-        statusPanel.add(rank);
-        statusPanel.add(new JLabel("活跃人数: "));
-        active_num.setPreferredSize(new Dimension(30, 17));
-        statusPanel.add(active_num);
+        statusPanel = StatusPanel.getInstance();
         //文本框显示区域
         JScrollPane ChatPanel=new JScrollPane(chatArea);
         ChatPanel.setPreferredSize(new Dimension(ChatPanel.getPreferredSize().width, 370));
@@ -347,15 +315,12 @@ public class ChatClient extends JFrame {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    ChatClient win=new ChatClient();
-                    win.setVisible(true);
-                } catch (RuntimeException e){
-                    System.out.println(e);
-                }
+        SwingUtilities.invokeLater(() -> {
+            try {
+                ChatClient win=new ChatClient();
+                win.setVisible(true);
+            } catch (RuntimeException e){
+                System.out.println(e);
             }
         });
     }
