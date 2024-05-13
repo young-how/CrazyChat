@@ -3,9 +3,7 @@ package org.DUT;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.DUT.UI.InputField;
-import org.DUT.UI.StatusPanel;
-import org.DUT.UI.TitlePanel;
+import org.DUT.UI.*;
 import org.DUT.utils.ChatArea;
 import org.DUT.utils.Constants;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +33,8 @@ import java.util.concurrent.*;
 public class ChatClient extends JFrame {
     //private JTextArea chatArea;  //老版本，不支持富文本
     private JTextPane chatArea;  //新版本，支持富文本和图片
+    private PicturePanel picturePanel;  //图片发送工具包
+    private toolPanel toolpanel;   //工具栏
     private InputField inputField;
     private JTextField name_input;
     @Value("${message.initName}")
@@ -57,8 +57,6 @@ public class ChatClient extends JFrame {
         Properties props = new Properties();
         System.out.println("读取配置");
         InputStream fis = this.getClass().getClassLoader().getResourceAsStream("config.properties");
-//        System.out.println(filepath);
-//        InputStream fis = new FileInputStream(resourceAsStream);  //idea开发专用
         props.load(fis);
         fis.close();
         System.out.println("读取配置成功");
@@ -80,6 +78,9 @@ public class ChatClient extends JFrame {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        Constants.setIP(config.getProperty("server.CrazyChat_Server.ip"));
+        Constants.setPort(config.getProperty("server.CrazyChat_Server.port"));
+        Constants.setMediaPath(this.getClass().getClassLoader().getResource("pic").getPath()); //设置媒体路径
         server_ip= config.getProperty("server.kafka.ip");
         server_port=config.getProperty("server.kafka.port");
         topic=config.getProperty("message.topic");
@@ -149,6 +150,7 @@ public class ChatClient extends JFrame {
                 setSize(Constants.WIDTH, 25);
                 minmum=true;
                 minButton.setText("口");
+                picturePanel.setWinVisible(false);  //缩小图片工具栏
             }
             setLocation(screenSize.width - getWidth()+Constants.LOCATION_X_ADD, screenSize.height - getHeight()+Constants.LOCATION_Y_ADD);
 
@@ -158,7 +160,8 @@ public class ChatClient extends JFrame {
 //        chatArea = new JTextArea();
 //        chatArea.setEditable(false);
 //        chatArea.setLineWrap(true); // 设置自动换行
-
+        picturePanel=Constants.picturePanel;  //图片显示工具
+        toolpanel=Constants.toolpanel;  //工具栏
         //新版本聊天框
         chatArea= Constants.charArea;
         chatArea.setEditable(false); // 设置为不可编辑，以免用户输入
@@ -214,6 +217,7 @@ public class ChatClient extends JFrame {
         add(titlePanel);
         add(statusPanel);
         add(ChatPanel);
+        add(toolpanel); //添加工具框
         add(inputPanel);
         try{
             postConstruct();  //构造gui组件之外的配置

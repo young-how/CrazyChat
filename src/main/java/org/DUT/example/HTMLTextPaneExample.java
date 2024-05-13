@@ -1,4 +1,4 @@
-package org.DUT;
+package org.DUT.example;
 
 import org.DUT.utils.ChatArea;
 import org.DUT.utils.Constants;
