@@ -155,17 +155,39 @@ message.initName=guest
 + 预期接入自然语言AI大模型，实现更加便捷的工作助手。
 + 预期添加图片/文件传输功能。
 
-## Ollama大模型服务器部署(Ubuntu)
-参考项目链接https://github.com/ollama/ollama
+## 服务端额外环境部署（Ubuntu）
+### Ollama大模型服务器部署(Ubuntu)
+github项目链接https://github.com/ollama/ollama
 下载Ollama
 ```
 curl -fsSL https://ollama.com/install.sh | sh
 ```
-下载模型权重文件并运行
+下载模型权重文件并运行（以Mistral为例）
 ```
 ollama run Mistral
 ```
 更改服务器配置文件使之能够监听外部请求
 ```
 $ sudo vi /etc/systemd/system/ollama.service
+```
+文件中的service下添加
+```agsl
+Environment="OLLAMA_HOST=0.0.0.0:11434"
+```
+重启Ollama
+```agsl
+systemctl restart ollama.service
+```
+
+## Deckofcards API
+用于支持扑克牌的后端服务，github连接https://github.com/crobertsbmw/deckofcards。
+拉取项目到服务器的自定义目录下
+```agsl
+git clone https://github.com/crobertsbmw/deckofcards
+```
+在deckofcards项目目录下执行
+```agsl
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver 0.0.0.0:8000
 ```
