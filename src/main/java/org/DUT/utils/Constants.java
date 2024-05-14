@@ -1,7 +1,9 @@
 package org.DUT.utils;
 
+import lombok.Data;
 import org.DUT.UI.PicturePanel;
 import org.DUT.UI.toolPanel;
+import org.DUT.userStat;
 
 import javax.swing.*;
 import javax.swing.text.Style;
@@ -11,6 +13,8 @@ import java.io.InputStream;
 import java.util.Properties;
 
 public class Constants {
+    public static volatile JScrollPane ChatPanel=null;  //聊天滑动栏
+    public static volatile userStat user=null;  //用户信息
     public static String SERVER_IP;  //服务器IP
     public static String SERVER_PORT;  //服务器PORT
     public static String mediaPath="";  //媒体路径
@@ -62,5 +66,11 @@ public class Constants {
     }
     public static void setMediaPath(String path){
         mediaPath=path;
+    }
+    public static void setChatPanel(JScrollPane pane){
+         ChatPanel=pane;
+    }
+    public static void setUser(userStat usr){
+        user=usr;
     }
 }

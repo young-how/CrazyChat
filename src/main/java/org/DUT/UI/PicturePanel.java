@@ -2,6 +2,7 @@ package org.DUT.UI;
 
 import lombok.Data;
 import org.DUT.httpRequestor;
+import org.DUT.userStat;
 import org.DUT.utils.Constants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
@@ -146,8 +147,8 @@ public class PicturePanel extends JFrame {
                             // 在这里处理点击事件，例如向服务器发送请求并上传图片
                             System.out.println("Clicked on: " + file.getName());
                             System.out.println(file.getAbsolutePath());
-                            adjustImage(file);  //调整图片大小
-                            sendPic2Server(file);
+                            File output=adjustImage(file);  //调整图片大小
+                            sendPic2Server(output);  //发送调整大小后的图片
                         }
                     });
                     galleryPanel.add(label);
@@ -177,16 +178,10 @@ public class PicturePanel extends JFrame {
             Graphics2D graphics2D = resizedImage.createGraphics();
             graphics2D.drawImage(scaledImage, 0, 0, null);
             graphics2D.dispose();
-
-            // 删除原始图片
-            if (inputFile.exists()) {
-                inputFile.delete();
-            }
             // 将调整后的图片保存到文件
             ImageIO.write(resizedImage, "jpg", outputFile);
             // 重命名调整后的图片为原始图片的文件名
-            outputFile.renameTo(inputFile);
-
+            //outputFile.renameTo(inputFile);
             System.out.println("图片调整完成，并替换原始图片。");
 
         } catch (IOException e) {
@@ -203,6 +198,9 @@ public class PicturePanel extends JFrame {
         // 创建请求体，包含文件内容
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", new FileSystemResource(file));
+        if(Constants.user!=null){
+            body.add("user", Constants.user);
+        }
         // 创建 HTTP 实体，包含请求头和请求体
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
         // 发送 POST 请求

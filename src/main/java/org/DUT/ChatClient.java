@@ -200,7 +200,9 @@ public class ChatClient extends JFrame {
         statusPanel = StatusPanel.getInstance();
         //文本框显示区域
         JScrollPane ChatPanel=new JScrollPane(chatArea);
+        ChatPanel.getVerticalScrollBar();
         ChatPanel.setPreferredSize(new Dimension(ChatPanel.getPreferredSize().width, 370));
+        Constants.setChatPanel(ChatPanel);  //设置为全局变量
 
         //添加布局
         setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));

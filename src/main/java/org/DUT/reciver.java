@@ -20,6 +20,9 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,6 +40,7 @@ public class reciver extends Thread{
     private HashSet<String> control_order=new HashSet<>();  //控制命令
     private String Date= LocalDate.now().toString();  //今天的日期
     private HashMap<String,Integer> insert_index=new HashMap<>();  //文本插入索引
+    static ThreadPoolExecutor pool = new ThreadPoolExecutor(2, 3, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(5));
     public reciver(Object win,Properties init_param){
         ip=init_param.getProperty("server_ip");
         port=init_param.getProperty("server_port");
@@ -147,8 +151,8 @@ public class reciver extends Thread{
         }
         else if(order.contains("/WithHtmlContent:")){
             //包含html内容
-            order.replace("/WithHtmlContent:","");
-            ChatArea.appendHtmlString(order);
+            String[] re=order.split("/WithHtmlContent:");
+            ChatArea.appendHtmlString(re[1]);
             return "";
         }
         return order;
@@ -165,13 +169,20 @@ public class reciver extends Thread{
         }
     }
     // 滚动 JTextArea 到底部
-    private static void scrollTextAreaToBottom(JTextArea textArea) {
-        textArea.setCaretPosition(textArea.getDocument().getLength());
-//        if(textArea.getDocument().getLength()-textArea.getCaretPosition()<20){
-//            textArea.setCaretPosition(textArea.getDocument().getLength());
-//        }
-        //
-        // textArea.getCaretPosition();
+    private static void scrollTextAreaToBottom() {
+        Runnable task=()->{
+            for(int i=0;i<10;i++){
+                int maximumValue = Constants.ChatPanel.getVerticalScrollBar().getMaximum();
+                Constants.ChatPanel.getVerticalScrollBar().setValue(maximumValue);
+                try {
+                    sleep(20);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
+        pool.execute(task);
+
     }
     /*
      * @param textPane:
@@ -212,7 +223,7 @@ public class reciver extends Thread{
                     }
                     //scrollTextAreaToBottom(messageWin);   //自动下拉到最下方
                     //scrollJTextPaneToBottom(messageWin);
-
+                    scrollTextAreaToBottom();  //调整滑动条的位置
                     Thread.sleep(20); // 线程休眠1秒
                 } catch (InterruptedException e) {
                     e.printStackTrace();

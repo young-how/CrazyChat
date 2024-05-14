@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import org.DUT.UI.toolPanel;
+import org.DUT.utils.Constants;
 import org.json.JSONObject;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -38,6 +39,7 @@ public class httpRequestor {
             String responseBody= restTemplate.postForObject(serverUrl, request, String.class);
             //JSONObject jsonObject = new JSONObject(responseBody);
             newest_user=objectMapper.readValue(responseBody, userStat.class);
+            Constants.setUser(newest_user);
             updateStatusPanel(newest_user);
         }
         catch (RuntimeException e){
