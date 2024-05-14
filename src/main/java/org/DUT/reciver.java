@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -153,6 +154,7 @@ public class reciver extends Thread{
             //包含html内容
             String[] re=order.split("/WithHtmlContent:");
             ChatArea.appendHtmlString(re[1]);
+            scrollTextAreaToBottom();
             return "";
         }
         return order;
@@ -171,17 +173,20 @@ public class reciver extends Thread{
     // 滚动 JTextArea 到底部
     private static void scrollTextAreaToBottom() {
         Runnable task=()->{
-            for(int i=0;i<10;i++){
+            try {
+                sleep(200);
                 int maximumValue = Constants.ChatPanel.getVerticalScrollBar().getMaximum();
                 Constants.ChatPanel.getVerticalScrollBar().setValue(maximumValue);
-                try {
-                    sleep(20);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         };
-        pool.execute(task);
+        try{
+            pool.execute(task);
+        }
+        catch (RejectedExecutionException e){
+            e.printStackTrace();
+        }
 
     }
     /*
@@ -220,10 +225,8 @@ public class reciver extends Thread{
                         Style myStyle = infos.startsWith(Constants.SYS_TALK)?
                                 messageWin.getStyle(Constants.SYS_STYLE):messageWin.getStyle(Constants.USER_STYLE);
                         insertMessage(infos,myStyle);
+                        scrollTextAreaToBottom();  //如果没有处理特殊情况，则刷新
                     }
-                    //scrollTextAreaToBottom(messageWin);   //自动下拉到最下方
-                    //scrollJTextPaneToBottom(messageWin);
-                    scrollTextAreaToBottom();  //调整滑动条的位置
                     Thread.sleep(20); // 线程休眠1秒
                 } catch (InterruptedException e) {
                     e.printStackTrace();
