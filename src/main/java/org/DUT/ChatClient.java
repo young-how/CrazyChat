@@ -17,9 +17,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDate;
@@ -80,7 +78,8 @@ public class ChatClient extends JFrame {
         }
         Constants.setIP(config.getProperty("server.CrazyChat_Server.ip"));
         Constants.setPort(config.getProperty("server.CrazyChat_Server.port"));
-        Constants.setMediaPath(this.getClass().getClassLoader().getResource("pic").getPath()); //设置媒体路径
+        //Constants.setMediaPath(config.getProperty("image.path"));
+        //Constants.setMediaPath(this.getClass().getClassLoader().getResource("pic").getPath()); //设置媒体路径
         server_ip= config.getProperty("server.kafka.ip");
         server_port=config.getProperty("server.kafka.port");
         topic=config.getProperty("message.topic");
@@ -130,6 +129,7 @@ public class ChatClient extends JFrame {
         closeButton.addActionListener(e -> {
             String context=chatArea.getText();  //获取文本信息
             rec.appendMessage(context);   //保存聊天框
+            //save_config();
             dispose(); // 关闭窗口
             System.exit(0); // 结束程序
         });
@@ -306,6 +306,22 @@ public class ChatClient extends JFrame {
                 }
             }
         return chatClient;
+    }
+    /*
+    对配置文件进行修改
+     */
+    public void save_config(){
+        Properties props= null;
+        try(OutputStream fos = new FileOutputStream("config.properties")){
+            props = readConfig();
+            System.out.println("保存配置");
+            props.setProperty("image.path",Constants.mediaPath);   //保存媒体库路径
+            props.store(fos, "Modified Configuration");
+            fos.close();
+            System.out.println("保存配置成功");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static void main(String[] args) {

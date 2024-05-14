@@ -16,6 +16,9 @@ import java.awt.event.*;
 import java.io.*;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +31,7 @@ public class PicturePanel extends JFrame {
     private HttpHeaders headers=new HttpHeaders();
     private ThreadPoolExecutor executor=new ThreadPoolExecutor(2, 3, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(5));
     String folderPath="";  //图片存放的路径
+    Set<String> file_set=new HashSet<>();
 
     public PicturePanel() {
         setTitle("Image Gallery");
@@ -37,6 +41,10 @@ public class PicturePanel extends JFrame {
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         getContentPane().add(scrollPane, BorderLayout.CENTER);
+        //添加布局
+        setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
+        JButton chosePath = getjButton();
+        add(chosePath);
 
         //参考主任务框体进行设置
         setSize(Constants.WIDTH_imageWin, Constants.HEIGHT_imageWin);
@@ -63,6 +71,44 @@ public class PicturePanel extends JFrame {
         setVisible(isVisible);
 
     }
+    private static File showFileChooser(Desktop desktop) throws IOException {
+        // 调用系统默认的文件资源管理器
+        File selectedFile = null;
+        File currentDir = new File(".");
+        desktop.open(currentDir);
+
+        // 等待用户选择文件或文件夹
+        selectedFile = new File(currentDir.getAbsolutePath());
+        return selectedFile;
+    }
+    private static JButton getjButton() {
+        JButton chosePath=new JButton("选择图片资源文件夹");
+        chosePath.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+                // 设置文件选择对话框的外观为 Windows 风格
+                try {
+                    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                    SwingUtilities.updateComponentTreeUI(fileChooser);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+
+                int result = fileChooser.showOpenDialog(null);
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    File selectedFile = fileChooser.getSelectedFile();
+                    String selectedFolderPath = selectedFile.getAbsolutePath();
+                    System.out.println("所选文件夹路径：" + selectedFolderPath);
+                    Constants.setMediaPath(selectedFolderPath);
+                }
+            }
+        });
+        chosePath.setAlignmentX(Component.CENTER_ALIGNMENT);
+        return chosePath;
+    }
 
     private void loadImagesFromFolder() {
         folderPath=Constants.mediaPath;  //客户端媒体库路径
@@ -84,9 +130,13 @@ public class PicturePanel extends JFrame {
             if(folderPath.equals("")) return;  //如果是空，退出
             File folder = new File(folderPath);
             File[] files = folder.listFiles();
+            //galleryPanel=new JPanel(new GridLayout(0, 3));
             //galleryPanel.removeAll();
+            //revalidate();
             for (File file : files) {
                 if (isImageFile(file)) {
+                    if(file_set.contains(file.getPath())) continue;
+                    file_set.add(file.getPath());
                     BufferedImage thumbnail = createThumbnail(file);
                     ImageIcon icon = new ImageIcon(thumbnail);
                     JLabel label = new JLabel(icon);
@@ -96,16 +146,54 @@ public class PicturePanel extends JFrame {
                             // 在这里处理点击事件，例如向服务器发送请求并上传图片
                             System.out.println("Clicked on: " + file.getName());
                             System.out.println(file.getAbsolutePath());
+                            adjustImage(file);  //调整图片大小
                             sendPic2Server(file);
                         }
                     });
                     galleryPanel.add(label);
+                    galleryPanel.repaint();
                 }
             }
-            //galleryPanel.repaint();
         };
         executor.execute(task);
 
+    }
+    public File adjustImage(File inputFile){
+        File outputFile = new File("temp_"+ UUID.randomUUID().toString()+".jpg");
+        // 目标宽度
+        // 目标宽度
+        int targetWidth = 250;
+
+        try {
+            // 读取原始图片文件
+            BufferedImage originalImage = ImageIO.read(inputFile);
+
+            // 计算调整后的高度，保持高度比例
+            int targetHeight = (int) (originalImage.getHeight() * (double) targetWidth / originalImage.getWidth());
+
+            // 创建缩放后的图片
+            Image scaledImage = originalImage.getScaledInstance(targetWidth, targetHeight, Image.SCALE_SMOOTH);
+            BufferedImage resizedImage = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_RGB);
+            Graphics2D graphics2D = resizedImage.createGraphics();
+            graphics2D.drawImage(scaledImage, 0, 0, null);
+            graphics2D.dispose();
+
+            // 删除原始图片
+            if (inputFile.exists()) {
+                inputFile.delete();
+            }
+            // 将调整后的图片保存到文件
+            ImageIO.write(resizedImage, "jpg", outputFile);
+            // 重命名调整后的图片为原始图片的文件名
+            outputFile.renameTo(inputFile);
+
+            System.out.println("图片调整完成，并替换原始图片。");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return inputFile;
+        }
+        return  outputFile;
     }
     public void sendPic2Server(File file){
         //发送图片到服务器
@@ -159,8 +247,8 @@ public class PicturePanel extends JFrame {
         }
         else{
             isVisible=true;
-            this.setVisible(isVisible);
             loadImagesFromFolder();  //重新载入图片
+            this.setVisible(isVisible);
         }
     }
     public void setWinVisible(boolean flag){
