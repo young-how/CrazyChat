@@ -4,6 +4,7 @@ import lombok.Data;
 import org.DUT.httpRequestor;
 import org.DUT.userStat;
 import org.DUT.utils.Constants;
+import org.DUT.utils.downloadUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
@@ -20,6 +21,7 @@ import java.awt.image.BufferedImage;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -104,6 +106,16 @@ public class PicturePanel extends JFrame {
                     String selectedFolderPath = selectedFile.getAbsolutePath();
                     System.out.println("所选文件夹路径：" + selectedFolderPath);
                     Constants.setMediaPath(selectedFolderPath);
+//                    try {
+//                        downloadUtils.downloadFile("http://10.7.8.7:1025/asyncDownload",
+//                                "testEmojiPackage-master.zip","C:\\Users\\young\\Downloads\\test",4);
+//                    } catch (IOException ex) {
+//                        ex.printStackTrace();
+//                    } catch (InterruptedException ex) {
+//                        ex.printStackTrace();
+//                    } catch (ExecutionException ex) {
+//                        ex.printStackTrace();
+//                    }
                 }
             }
         });
@@ -149,6 +161,7 @@ public class PicturePanel extends JFrame {
                             System.out.println(file.getAbsolutePath());
                             File output=adjustImage(file);  //调整图片大小
                             sendPic2Server(output);  //发送调整大小后的图片
+                            output.delete();
                         }
                     });
                     galleryPanel.add(label);

@@ -22,7 +22,7 @@ public class userStat {
     private  boolean isActive;  //是否是活跃状态
     private  Long rank;  //积分排名
     private  Long activeNum;  //活跃人数
-    userStat(){
+    public userStat(){
         //设置mac地址
         try {
             // 获取本地网络接口列表

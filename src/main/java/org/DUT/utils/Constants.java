@@ -2,7 +2,9 @@ package org.DUT.utils;
 
 import lombok.Data;
 import org.DUT.UI.PicturePanel;
+import org.DUT.UI.settingPanel;
 import org.DUT.UI.toolPanel;
+import org.DUT.pojo.configParam;
 import org.DUT.userStat;
 
 import javax.swing.*;
@@ -14,7 +16,8 @@ import java.util.Properties;
 
 public class Constants {
     public static volatile JScrollPane ChatPanel=null;  //聊天滑动栏
-    public static volatile userStat user=null;  //用户信息
+    public static volatile userStat user;  //用户信息
+    public static volatile configParam cf=new configParam();  //配置文件
     public static String SERVER_IP;  //服务器IP
     public static String SERVER_PORT;  //服务器PORT
     public static String mediaPath="";  //媒体路径
@@ -26,6 +29,7 @@ public class Constants {
     public static JTextPane charArea;
     public static PicturePanel picturePanel;
     public  static toolPanel toolpanel;
+    public static settingPanel settingpanel;
 
     public static int WIDTH = System.getProperty("os.name").startsWith("Mac")?450:400;
     public static int HEIGHT = System.getProperty("os.name").startsWith("Mac")?350:300;
@@ -37,6 +41,8 @@ public class Constants {
     public static int LOCATION_Y_ADD_imageWin = System.getProperty("os.name").startsWith("Mac")?-100:-50;
 
     static {
+        user=new userStat();
+        settingpanel=settingPanel.getInstance();
         charArea = ChatArea.getInstance();
         picturePanel=PicturePanel.getInstance();
         toolpanel=toolPanel.getInstance();

@@ -54,7 +54,8 @@ public class ChatClient extends JFrame {
     public Properties readConfig() throws IOException {
         Properties props = new Properties();
         System.out.println("读取配置");
-        InputStream fis = this.getClass().getClassLoader().getResourceAsStream("config.properties");
+        //InputStream fis = this.getClass().getClassLoader().getResourceAsStream("config.properties");
+        InputStream fis =new FileInputStream("config.properties");  //打包exe使用
         props.load(fis);
         fis.close();
         System.out.println("读取配置成功");
@@ -78,7 +79,7 @@ public class ChatClient extends JFrame {
         }
         Constants.setIP(config.getProperty("server.CrazyChat_Server.ip"));
         Constants.setPort(config.getProperty("server.CrazyChat_Server.port"));
-        //Constants.setMediaPath(config.getProperty("image.path"));
+        Constants.setMediaPath(config.getProperty("image.path"));
         //Constants.setMediaPath(this.getClass().getClassLoader().getResource("pic").getPath()); //设置媒体路径
         server_ip= config.getProperty("server.kafka.ip");
         server_port=config.getProperty("server.kafka.port");
@@ -151,6 +152,7 @@ public class ChatClient extends JFrame {
                 minmum=true;
                 minButton.setText("口");
                 picturePanel.setWinVisible(false);  //缩小图片工具栏
+                Constants.settingpanel.setWinVisible(false);
             }
             setLocation(screenSize.width - getWidth()+Constants.LOCATION_X_ADD, screenSize.height - getHeight()+Constants.LOCATION_Y_ADD);
 

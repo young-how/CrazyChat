@@ -10,11 +10,18 @@ import java.awt.event.ActionListener;
 
 public class toolPanel extends JPanel{
     private JButton imageTool=new JButton("图片");  //消息发送数目
+    private JButton mediaTool=new JButton("资源库");  //消息发送数目
+    private JButton setTool=new JButton("设置");  //设置面板
     private PicturePanel picturePanel;  //图片发送工具
+    private settingPanel settingpanel;  //图片发送工具
     public toolPanel(){
         picturePanel= Constants.picturePanel;
-        imageTool.setPreferredSize(new Dimension(60, 17));
-        imageTool.setFont(new Font("微软雅黑", Font.PLAIN, 8));
+        settingpanel= Constants.settingpanel;
+        setLayout(new FlowLayout(FlowLayout.LEFT));
+        setPreferredSize(new Dimension(getPreferredSize().width, 13));
+        addButtonStyle(imageTool);  //添加按钮样式
+        addButtonStyle(mediaTool);  //添加按钮样式
+        addButtonStyle(setTool);  //添加按钮样式
         imageTool.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -23,10 +30,20 @@ public class toolPanel extends JPanel{
                 }
             }
         });  //添加点击事件
-        setLayout(new FlowLayout(FlowLayout.LEFT));
-        setPreferredSize(new Dimension(getPreferredSize().width, 13));
-        add(imageTool);
+        setTool.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if(picturePanel!=null){
+                    settingpanel.switchWin();
+                }
+            }
+        });  //添加点击事件
 
+    }
+    public void addButtonStyle(JButton button){
+        button.setPreferredSize(new Dimension(60, 17));
+        button.setFont(new Font("微软雅黑", Font.PLAIN, 8));
+        add(button);
     }
     private static volatile toolPanel toolPanel;
     public static toolPanel getInstance() {
