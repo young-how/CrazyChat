@@ -113,7 +113,7 @@ public class ChatClient extends JFrame {
         // 将窗体设置为半透明
         setUndecorated(true); // 隐藏边框
         setBackground(new Color(255, 255, 255, 0)); // 设置背景颜色为半透明黑色
-        setOpacity((float)0.8);
+        setOpacity((float)1);
         //设置窗口始终置顶
         setAlwaysOnTop(true);
         // 设置窗体位置为右下角

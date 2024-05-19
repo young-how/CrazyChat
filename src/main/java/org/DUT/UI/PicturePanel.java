@@ -55,21 +55,13 @@ public class PicturePanel extends JFrame {
         // 将窗体设置为半透明
         setUndecorated(true); // 隐藏边框
         setBackground(new Color(255, 255, 255, 0)); // 设置背景颜色为半透明黑色
-        setOpacity((float)0.8);
+        setOpacity((float)1);
         //设置窗口始终置顶
         setAlwaysOnTop(true);
         // 设置窗体位置为右下角
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         //根据系统设置摆放位置
         setLocation(screenSize.width - getWidth()+Constants.LOCATION_X_ADD-Constants.WIDTH, screenSize.height - getHeight()+Constants.LOCATION_Y_ADD);
-        // 添加关闭按钮
-//        JButton closeButton = new JButton("x");
-//        closeButton.setPreferredSize(new Dimension(40, 17)); // 设置高度为 30
-//        JButton minButton = new JButton("-");
-//        minButton.setPreferredSize(new Dimension(40, 17)); // 设置高度为 30
-//        JButton cleanButton = new JButton("~");  //清屏
-//        cleanButton.setPreferredSize(new Dimension(40, 17)); // 设置高度为 30
-        //folderPath=this.getClass().getResource("").getPath()+"/../";
         loadImagesFromFolder();
         setVisible(isVisible);
 

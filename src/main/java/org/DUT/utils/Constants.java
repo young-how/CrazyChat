@@ -34,6 +34,7 @@ public class Constants {
     public static int WIDTH = System.getProperty("os.name").startsWith("Mac")?450:400;
     public static int HEIGHT = System.getProperty("os.name").startsWith("Mac")?350:300;
     public static int WIDTH_imageWin = System.getProperty("os.name").startsWith("Mac")?450:350;
+    public static int WIDTH_texasPoker = System.getProperty("os.name").startsWith("Mac")?450:500;
     public static int HEIGHT_imageWin = System.getProperty("os.name").startsWith("Mac")?350:300;
     public static int LOCATION_X_ADD = System.getProperty("os.name").startsWith("Mac")?-20:0;
     public static int LOCATION_Y_ADD = System.getProperty("os.name").startsWith("Mac")?-100:-50;
