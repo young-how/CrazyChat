@@ -2,6 +2,7 @@ package org.DUT.utils;
 
 import lombok.Data;
 import org.DUT.UI.PicturePanel;
+import org.DUT.UI.pokerPanel;
 import org.DUT.UI.settingPanel;
 import org.DUT.UI.toolPanel;
 import org.DUT.pojo.configParam;
@@ -30,6 +31,8 @@ public class Constants {
     public static PicturePanel picturePanel;
     public  static toolPanel toolpanel;
     public static settingPanel settingpanel;
+    public static pokerPanel poker;
+    public static double Opacity=1.0;  //透明度
 
     public static int WIDTH = System.getProperty("os.name").startsWith("Mac")?450:400;
     public static int HEIGHT = System.getProperty("os.name").startsWith("Mac")?350:300;
@@ -47,6 +50,7 @@ public class Constants {
         charArea = ChatArea.getInstance();
         picturePanel=PicturePanel.getInstance();
         toolpanel=toolPanel.getInstance();
+        poker=pokerPanel.getInstance();
         //设置用户文字可视化主题
         Style USERSTYLE= charArea.addStyle(USER_STYLE, null);
         StyleConstants.setForeground(USERSTYLE, Color.BLACK); // 设置文本颜色

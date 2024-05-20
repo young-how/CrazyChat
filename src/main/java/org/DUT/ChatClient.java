@@ -32,6 +32,7 @@ public class ChatClient extends JFrame {
     //private JTextArea chatArea;  //老版本，不支持富文本
     private JTextPane chatArea;  //新版本，支持富文本和图片
     private PicturePanel picturePanel;  //图片发送工具包
+    private pokerPanel poker;  //扑克牌
     private toolPanel toolpanel;   //工具栏
     private InputField inputField;
     private JTextField name_input;
@@ -79,7 +80,13 @@ public class ChatClient extends JFrame {
         }
         Constants.setIP(config.getProperty("server.CrazyChat_Server.ip"));
         Constants.setPort(config.getProperty("server.CrazyChat_Server.port"));
-        Constants.setMediaPath(config.getProperty("image.path"));
+        if(config.getProperty("image.path")!=null){
+            Constants.setMediaPath(config.getProperty("image.path"));
+        }
+        else{
+            Constants.setMediaPath("/");
+        }
+
         //Constants.setMediaPath(this.getClass().getClassLoader().getResource("pic").getPath()); //设置媒体路径
         server_ip= config.getProperty("server.kafka.ip");
         server_port=config.getProperty("server.kafka.port");
@@ -113,7 +120,7 @@ public class ChatClient extends JFrame {
         // 将窗体设置为半透明
         setUndecorated(true); // 隐藏边框
         setBackground(new Color(255, 255, 255, 0)); // 设置背景颜色为半透明黑色
-        setOpacity((float)1);
+        setOpacity((float)Constants.Opacity);
         //设置窗口始终置顶
         setAlwaysOnTop(true);
         // 设置窗体位置为右下角
@@ -152,6 +159,7 @@ public class ChatClient extends JFrame {
                 minmum=true;
                 minButton.setText("口");
                 picturePanel.setWinVisible(false);  //缩小图片工具栏
+                poker.setWinVisible(false); //隐藏德州扑克
                 Constants.settingpanel.setWinVisible(false);
             }
             setLocation(screenSize.width - getWidth()+Constants.LOCATION_X_ADD, screenSize.height - getHeight()+Constants.LOCATION_Y_ADD);
@@ -164,6 +172,7 @@ public class ChatClient extends JFrame {
 //        chatArea.setLineWrap(true); // 设置自动换行
         picturePanel=Constants.picturePanel;  //图片显示工具
         toolpanel=Constants.toolpanel;  //工具栏
+        poker=Constants.poker;  //德州扑克
         //新版本聊天框
         chatArea= Constants.charArea;
         chatArea.setEditable(false); // 设置为不可编辑，以免用户输入

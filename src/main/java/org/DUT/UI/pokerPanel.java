@@ -44,6 +44,8 @@ public class pokerPanel extends JFrame{
     private JButton raiseButton;
     private JButton foldButton;
     private JButton callButton;
+    private volatile boolean isVi=false;
+    private volatile JScrollPane scrollPane;
     private RestTemplate restTemplate = new RestTemplate();  //请求发送器
     private ObjectMapper objectMapper = new ObjectMapper();  //Json映射为class
     private volatile pokerDesk nearest_deskInfo; //最近的牌局信息
@@ -63,7 +65,7 @@ public class pokerPanel extends JFrame{
         // 将窗体设置为半透明
         setUndecorated(true); // 隐藏边框
         setBackground(new Color(255, 255, 255, 0)); // 设置背景颜色为半透明黑色
-        setOpacity((float)1);
+        setOpacity((float)1.0);
         //设置窗口始终置顶
         setAlwaysOnTop(true);
         // 设置窗体位置为右下角
@@ -98,17 +100,16 @@ public class pokerPanel extends JFrame{
         // Players Panel
         playersPanel = new JPanel();
         playersPanel.setLayout(new BoxLayout(playersPanel, BoxLayout.Y_AXIS));
-        JScrollPane scrollPane = new JScrollPane(playersPanel);
+        scrollPane = new JScrollPane(playersPanel);
         add(scrollPane, BorderLayout.CENTER);
-
-
+        //setVisible(visible);
         try{
             updateInfo();
             updateGUI();
         }catch ( JsonProcessingException e){
             e.printStackTrace();
         }
-
+        System.out.println("init poker panel");
     }
     private void addGlobalInfoPanelComponents() {
         actionPanel.add(new JLabel("兑换筹码:"));
@@ -141,6 +142,19 @@ public class pokerPanel extends JFrame{
             }
         });  //添加点击事件
         addButtonStyle(exitButton,actionPanel);
+        // 开始按钮
+        JButton startButton = new JButton("开始");
+        startButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    requestByOrder("/start","");  //发送以多少筹码加入游戏的请求
+                } catch (JsonProcessingException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });  //添加点击事件
+        addButtonStyle(startButton,actionPanel);
 
         // Fold Button
         foldButton = new JButton("弃牌");
@@ -192,34 +206,42 @@ public class pokerPanel extends JFrame{
     根据返回的牌桌信息设置按钮的可用性、窗口的值上限
      */
     public void settingButton(){
-        if(getNearest_deskInfo().getCurrentUser_id()==getNearest_deskInfo().getOwn_id()){
-            //组件可用
+        if(getNearest_deskInfo().getStarted()){
+            //游戏未开始，组件可用
+            if(getNearest_deskInfo().getCurrentUser_id()==getNearest_deskInfo().getOwn_id()){
+                //组件可用
+                for(Component component:getActionPanel2().getComponents()){
+                    component.setEnabled(true);
+                }
+                SpinnerNumberModel model = (SpinnerNumberModel)getRaiseAmountSpinner().getModel();
+                if(nearest_deskInfo.getMoney()==0){
+                    //没有筹码了
+                    model.setMinimum(nearest_deskInfo.getCurrentHighestBet());
+                    getCallButton().setEnabled(false);
+                    getRaiseButton().setEnabled(false);
+                }
+                else{
+                    model.setMinimum(nearest_deskInfo.getCurrentHighestBet());
+                    model.setMaximum(nearest_deskInfo.getMoney());
+                    getCallButton().setEnabled(true);
+                    getRaiseButton().setEnabled(true);
+                }
+            }
+            else{
+                //组件不可用
+                for(Component component:getActionPanel2().getComponents()){
+                    component.setEnabled(false);
+                }
+            }
+            foldButton.setEnabled(true);  //弃牌永远可用
+        }else{
+            //游戏未开始，组件不可用
             for(Component component:getActionPanel2().getComponents()){
                 component.setEnabled(true);
             }
         }
-        else{
-            //组件不可用
-            for(Component component:getActionPanel2().getComponents()){
-                component.setEnabled(false);
-            }
-        }
-        SpinnerNumberModel model = (SpinnerNumberModel)getRaiseAmountSpinner().getModel();
-        if(nearest_deskInfo.getMoney()+nearest_deskInfo.getUsers().get(nearest_deskInfo.getOwn_id()).getCurrentBet()<nearest_deskInfo.getCurrentHighestBet()){
-            //金钱不够下注
-            model.setMinimum(nearest_deskInfo.getCurrentHighestBet());
-            getCallButton().setEnabled(false);
-            getRaiseButton().setEnabled(false);
-        }
-        else{
-            model.setMinimum(nearest_deskInfo.getCurrentHighestBet());
-            model.setMaximum(nearest_deskInfo.getMoney());
-            getCallButton().setEnabled(true);
-            getRaiseButton().setEnabled(true);
-        }
-        if(nearest_deskInfo.getUsers().get(nearest_deskInfo.getOwn_id()).isFolded()){
-            foldButton.setEnabled(false);
-        }
+
+
     }
     public void addButtonStyle(JButton button,JPanel jp){
         button.setPreferredSize(new Dimension(60, 17));
@@ -241,7 +263,7 @@ public class pokerPanel extends JFrame{
                     userStat user=new userStat();
                     HttpEntity<userStat> request=Class2Json(user);
                     // 发送 POST 请求到服务器
-                    String serverUrl = serverUrl_prefix+"/getDeskInfo";
+                    String serverUrl = "http://"+Constants.SERVER_IP+":"+Constants.SERVER_PORT+"/texasPoker/getDeskInfo";
                     String responseBody= restTemplate.postForObject(serverUrl, request, String.class);
                     pokerDesk info=objectMapper.readValue(responseBody, pokerDesk.class);
                     setNearest_deskInfo(info);
@@ -277,7 +299,8 @@ public class pokerPanel extends JFrame{
             userStat user=new userStat();
             HttpEntity<userStat> request=Class2Json(user);
             // 发送 POST 请求到服务器
-            String serverUrl = serverUrl_prefix+order+param;  //向服务器对应的连接发送请求
+            //String serverUrl = serverUrl_prefix+order+param;  //向服务器对应的连接发送请求
+            String serverUrl = "http://"+Constants.SERVER_IP+":"+Constants.SERVER_PORT+"/texasPoker/"+order+param;  //向服务器对应的连接发送请求
             String responseBody= restTemplate.postForObject(serverUrl, request, String.class);
             pokerDesk info=objectMapper.readValue(responseBody, pokerDesk.class);
             setNearest_deskInfo(info);
@@ -340,13 +363,12 @@ public class pokerPanel extends JFrame{
                 setGbc(gbc,5,2,3);
                 globalInfoPanel.add(new JLabel(formCards(gameInfo.getWinner_cards())),gbc);  //显示赢家手牌
 
-
-
                 // Update player info
                 for (texasPlayer player : gameInfo.getUsers()) {
                     JPanel playerPanel = new JPanel();
                     //playerPanel.setLayout(new GridLayout(0, 2));
                     playerPanel.setLayout(new GridBagLayout());  //新布局
+                    playerPanel.setPreferredSize(new Dimension(Constants.WIDTH_texasPoker-20, 170));
                     GridBagConstraints gbc = new GridBagConstraints();
                     gbc.insets = new Insets(0, 0, 8, 8); // Add some padding
                     TitledBorder border =null;
@@ -403,7 +425,7 @@ public class pokerPanel extends JFrame{
                     //第4行
                     pokerStatics statics=player.getStatics();
                     setGbc(gbc,0,3,1);
-                    playerPanel.add(new JLabel("游戏局数: "),gbc);
+                    playerPanel.add(new JLabel("局数: "),gbc);
                     setGbc(gbc,1,3,1);
                     playerPanel.add(new JLabel(String.valueOf(statics.getGameNum())),gbc);
                     setGbc(gbc,2,3,1);
@@ -415,16 +437,16 @@ public class pokerPanel extends JFrame{
                     setGbc(gbc,5,3,1);
                     playerPanel.add(new JLabel(String.format("%.2f",statics.getWinRate())),gbc);
                     setGbc(gbc,6,3,1);
-                    playerPanel.add(new JLabel("赢得积分: " ),gbc);
+                    playerPanel.add(new JLabel("总积分: " ),gbc);
                     setGbc(gbc,7,3,1);
                     playerPanel.add(new JLabel(String.valueOf(statics.getGainMoney())),gbc);
                     //第5行
                     setGbc(gbc,0,4,1);
-                    playerPanel.add(new JLabel("幸运值: " ),gbc);
+                    playerPanel.add(new JLabel("手气: " ),gbc);
                     setGbc(gbc,1,4,1);
                     playerPanel.add(new JLabel(String.format("%.2f",statics.getLuckyValue())),gbc);
                     setGbc(gbc,2,4,1);
-                    playerPanel.add(new JLabel("幸运值排名: " ),gbc);
+                    playerPanel.add(new JLabel("幸运排名: " ),gbc);
                     setGbc(gbc,3,4,1);
                     playerPanel.add(new JLabel(String.valueOf(statics.getRankLucky())),gbc);
                     setGbc(gbc,4,4,1);
@@ -432,16 +454,14 @@ public class pokerPanel extends JFrame{
                     setGbc(gbc,5,4,1);
                     playerPanel.add(new JLabel(String.valueOf(statics.getRankWinNum())),gbc);
                     setGbc(gbc,6,4,1);
-                    playerPanel.add(new JLabel("赚取积分排名: " ),gbc);
+                    playerPanel.add(new JLabel("积分排名: " ),gbc);
                     setGbc(gbc,7,4,1);
                     playerPanel.add(new JLabel(String.valueOf(statics.getRankMoney())),gbc);
                     //第6行
                     setGbc(gbc,0,5,1);
-                    playerPanel.add(new JLabel("牌型统计: "),gbc);  //牌型统计
+                    playerPanel.add(new JLabel("统计: "),gbc);  //牌型统计
                     setGbc(gbc,1,5,7);
                     playerPanel.add(new JLabel(getCardLevelStatics(player)),gbc);
-
-
                     // Add more player info if needed
                     playersPanel.add(playerPanel);
                 }
@@ -616,6 +636,33 @@ public class pokerPanel extends JFrame{
         }
         re.append("</html>");
         return re.toString();
+    }
+    public void switchWin(){
+        if(isVi){
+            isVi=false;
+            this.setVisible(isVi);
+        }
+        else{
+            isVi=true;
+            this.setVisible(isVi);
+        }
+    }
+    public void setWinVisible(boolean flag){
+        isVi=flag;
+        this.setVisible(isVi);
+    }
+    private static volatile pokerPanel pokerpanel;
+    public static pokerPanel getInstance() {
+        if (null == pokerpanel) {
+            // 模拟在创建对象之前做一些准备工作
+            synchronized (pokerPanel.class) {
+                if(null == pokerpanel) {
+                    pokerpanel = new pokerPanel();
+                    pokerpanel.setVisible(pokerpanel.isVi());
+                }
+            }
+        }
+        return pokerpanel;
     }
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
