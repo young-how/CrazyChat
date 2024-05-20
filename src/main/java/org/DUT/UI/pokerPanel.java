@@ -38,6 +38,7 @@ public class pokerPanel extends JFrame{
     private JPanel globalInfoPanel;
     private JPanel playersPanel;
     private JPanel actionPanel;
+    private JPanel actionPanel2;
     private Timer timer;
     private RestTemplate restTemplate = new RestTemplate();  //请求发送器
     private ObjectMapper objectMapper = new ObjectMapper();  //Json映射为class
@@ -82,10 +83,13 @@ public class pokerPanel extends JFrame{
 
         // 动作栏 Panel
         actionPanel = new JPanel();
+        actionPanel2 = new JPanel();
         actionPanel.setLayout(new FlowLayout());
+        actionPanel2.setLayout(new FlowLayout());
         //actionPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
         addGlobalInfoPanelComponents();
         add(actionPanel);
+        add(actionPanel2);
         // Players Panel
         playersPanel = new JPanel();
         playersPanel.setLayout(new BoxLayout(playersPanel, BoxLayout.Y_AXIS));
@@ -116,19 +120,19 @@ public class pokerPanel extends JFrame{
 
         // Fold Button
         JButton foldButton = new JButton("弃牌");
-        addButtonStyle(foldButton,actionPanel);
+        addButtonStyle(foldButton,actionPanel2);
 
         // Call Button
         JButton callButton = new JButton("跟注");
         //callButton.addActionListener(e -> call());
-        addButtonStyle(callButton,actionPanel);
+        addButtonStyle(callButton,actionPanel2);
 
         // Raise Button
         JButton raiseButton = new JButton("加注");
         //raiseButton.addActionListener(e -> raise());
-        addButtonStyle(raiseButton,actionPanel);
+        addButtonStyle(raiseButton,actionPanel2);
         // Spinner for Raise Amount
-        actionPanel.add(raiseAmountSpinner); //加注的金额
+        actionPanel2.add(raiseAmountSpinner); //加注的金额
     }
     public void addButtonStyle(JButton button,JPanel jp){
         button.setPreferredSize(new Dimension(60, 17));
@@ -186,7 +190,7 @@ public class pokerPanel extends JFrame{
                 playersPanel.removeAll();
                 pokerDesk gameInfo=getNearest_deskInfo();
                 if(gameInfo==null) continue;
-                gbc.insets = new Insets(0, 0, 4, 4); // Add some padding
+                gbc.insets = new Insets(0, 0, 4, 8); // Add some padding
                 // 第一行
                 setGbc(gbc,0,0,1);
                 globalInfoPanel.add(new JLabel("奖池: " + gameInfo.getPot()),gbc);
@@ -203,21 +207,21 @@ public class pokerPanel extends JFrame{
                 setGbc(gbc,3,0,1);
                 globalInfoPanel.add(new JLabel("状态: " + status),gbc);
                 //第2行
-                setGbc(gbc,0,1,1);
+                setGbc(gbc,4,0,1);
                 globalInfoPanel.add(new JLabel("你的筹码: " + gameInfo.getMoney()),gbc);
-                setGbc(gbc,1,1,1);
+                setGbc(gbc,5,0,1);
                 globalInfoPanel.add(new JLabel("你的编号: " + gameInfo.getOwn_id()),gbc);
-                setGbc(gbc,2,1,1);
+                setGbc(gbc,6,0,1);
                 globalInfoPanel.add(new JLabel("当前下注: " + gameInfo.getCurrentHighestBet()),gbc);
                 //第3行
-                setGbc(gbc,0,2,1);
+                setGbc(gbc,0,1,1);
                 globalInfoPanel.add(new JLabel("你的手牌:"),gbc);
-                setGbc(gbc,1,2,3);
+                setGbc(gbc,1,1,3);
                 globalInfoPanel.add(new JLabel(formCards(gameInfo.getHadCards())),gbc);
                 //第4行
-                setGbc(gbc,0,3,1);
+                setGbc(gbc,0,2,1);
                 globalInfoPanel.add(new JLabel("场面牌:"),gbc);
-                setGbc(gbc,1,3,3);
+                setGbc(gbc,1,2,3);
                 globalInfoPanel.add(new JLabel(formCards(gameInfo.getBoardCards())),gbc);
 
 
