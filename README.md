@@ -185,3 +185,42 @@ systemctl restart ollama.service
 客户端提供了用于德州扑克游戏的图形化界面。能够将用户积分兑换为筹码，并能够对正在进行的牌局信息如奖池大小、下注轮次、当前正在下注的玩家、玩家信息进行可视化。支持了更加详细的用户信息可视化，能够对每个用户的下注状态、称号、局数、胜场、胜率、累积积分、手气、手气排名、胜场排名、积分排名、历史牌型进行可视化。信息存储由后端服务器的redis提供支持。
 ![](/doc/texasPoker.png)
 ![](/doc/texasPoker2.png)
+### 服务端
+服务端为德州扑克游戏提供的API如下(以localhost为例)：
+
+1.获取牌局信息
+```
+http://localhost:1025/texasPoker/getDeskInfo
+//requestBody: userStat。根据提供的用户信息返回经过处理的牌局视图，示例json字符串如下：
+{
+    "id": "00-FF-2D-4A-D2-C1",
+    "name": "test",
+    "message_num": 132,
+    "score": 2320,
+    "level": 2,
+    "title": null,
+    "win_game_num": 0,
+    "game_num": 0,
+    "reward": null,
+    "rank": null,
+    "active": true
+}
+```
+2.加入牌局/购买筹码
+```
+http://localhost:1025/texasPoker/join
+//param: money。  购买的筹码数量、或者加入牌局兑换的筹码数量
+//requestBody: userStat。根据提供的用户信息返回经过处理的牌局视图，示例json字符串如略
+```
+3.退出牌局，并将筹码转换为积分
+```
+http://localhost:1025/texasPoker/exit
+//requestBody: userStat。根据提供的用户信息返回经过处理的牌局视图，示例json字符串略
+```
+4.退出牌局，并将筹码转换为积分
+```
+http://localhost:1025/texasPoker/bet
+//param: money。  下注的筹码数量
+//param: fold。  是否弃牌，弃牌:true,不弃牌：false
+//requestBody: userStat。根据提供的用户信息返回经过处理的牌局视图，示例json字符串略
+```
