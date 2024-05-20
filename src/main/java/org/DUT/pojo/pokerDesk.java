@@ -29,4 +29,6 @@ public class pokerDesk {
     private Integer round;  //当前的下注轮次
     private Integer currentHighestBet;  //当前最高下注金额
     private String systemInfo;  //系统消息
+    private String winner;  //赢家信息
+    private List<String> winner_cards=new ArrayList<>();  //赢家手牌
 }

@@ -18,6 +18,8 @@ import org.springframework.web.client.RestTemplate;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +41,9 @@ public class pokerPanel extends JFrame{
     private JPanel playersPanel;
     private JPanel actionPanel;
     private JPanel actionPanel2;
-    private Timer timer;
+    private JButton raiseButton;
+    private JButton foldButton;
+    private JButton callButton;
     private RestTemplate restTemplate = new RestTemplate();  //请求发送器
     private ObjectMapper objectMapper = new ObjectMapper();  //Json映射为class
     private volatile pokerDesk nearest_deskInfo; //最近的牌局信息
@@ -47,6 +51,7 @@ public class pokerPanel extends JFrame{
     private volatile JSpinner joinMoney = new JSpinner(new SpinnerNumberModel(0, 0, 10000, 100));  //加入房间所带筹码
     GridBagConstraints gbc= new GridBagConstraints();
     private ThreadPoolExecutor pool =new ThreadPoolExecutor(2,3,1L, TimeUnit.SECONDS,new LinkedBlockingQueue<>(3));
+    String serverUrl_prefix = "http://localhost:1025/texasPoker/";
     public pokerPanel() {
         //标准化设置窗体大小
         setTitle("Texas Poker Game");
@@ -110,29 +115,111 @@ public class pokerPanel extends JFrame{
         actionPanel.add(joinMoney); //加入房间所带的金额
         //加入房间
         JButton join = new JButton("兑换");
-        join.addActionListener(e -> System.exit(0));
+        join.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int money=(Integer) joinMoney.getValue();
+                try {
+                    requestByOrder("/join","?money="+money);  //发送以多少筹码加入游戏的请求
+                } catch (JsonProcessingException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });  //添加点击事件
         addButtonStyle(join,actionPanel);
 
         // Exit Button
         JButton exitButton = new JButton("退出");
-        exitButton.addActionListener(e -> System.exit(0));
+        exitButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    requestByOrder("/exit","");  //发送以多少筹码加入游戏的请求
+                } catch (JsonProcessingException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });  //添加点击事件
         addButtonStyle(exitButton,actionPanel);
 
         // Fold Button
-        JButton foldButton = new JButton("弃牌");
+        foldButton = new JButton("弃牌");
+        foldButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    requestByOrder("/bet","?fold=true&money=0");  //发送以多少筹码加入游戏的请求
+                } catch (JsonProcessingException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });  //添加点击事件
         addButtonStyle(foldButton,actionPanel2);
 
         // Call Button
-        JButton callButton = new JButton("跟注");
-        //callButton.addActionListener(e -> call());
+        callButton = new JButton("跟注");
+        callButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    int money=nearest_deskInfo.getCurrentHighestBet();
+                    requestByOrder("/bet","?fold=false&money="+money);  //跟注
+                } catch (JsonProcessingException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });  //添加点击事件
         addButtonStyle(callButton,actionPanel2);
 
         // Raise Button
-        JButton raiseButton = new JButton("加注");
-        //raiseButton.addActionListener(e -> raise());
+        raiseButton = new JButton("加注");
+        raiseButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    int money=(Integer) raiseAmountSpinner.getValue();
+                    requestByOrder("/bet","?fold=false&money="+money);  //加注
+                } catch (JsonProcessingException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });  //添加点击事件
         addButtonStyle(raiseButton,actionPanel2);
         // Spinner for Raise Amount
         actionPanel2.add(raiseAmountSpinner); //加注的金额
+    }
+    /*
+    根据返回的牌桌信息设置按钮的可用性、窗口的值上限
+     */
+    public void settingButton(){
+        if(getNearest_deskInfo().getCurrentUser_id()==getNearest_deskInfo().getOwn_id()){
+            //组件可用
+            for(Component component:getActionPanel2().getComponents()){
+                component.setEnabled(true);
+            }
+        }
+        else{
+            //组件不可用
+            for(Component component:getActionPanel2().getComponents()){
+                component.setEnabled(false);
+            }
+        }
+        SpinnerNumberModel model = (SpinnerNumberModel)getRaiseAmountSpinner().getModel();
+        if(nearest_deskInfo.getMoney()+nearest_deskInfo.getUsers().get(nearest_deskInfo.getOwn_id()).getCurrentBet()<nearest_deskInfo.getCurrentHighestBet()){
+            //金钱不够下注
+            model.setMinimum(nearest_deskInfo.getCurrentHighestBet());
+            getCallButton().setEnabled(false);
+            getRaiseButton().setEnabled(false);
+        }
+        else{
+            model.setMinimum(nearest_deskInfo.getCurrentHighestBet());
+            model.setMaximum(nearest_deskInfo.getMoney());
+            getCallButton().setEnabled(true);
+            getRaiseButton().setEnabled(true);
+        }
+        if(nearest_deskInfo.getUsers().get(nearest_deskInfo.getOwn_id()).isFolded()){
+            foldButton.setEnabled(false);
+        }
     }
     public void addButtonStyle(JButton button,JPanel jp){
         button.setPreferredSize(new Dimension(60, 17));
@@ -154,13 +241,12 @@ public class pokerPanel extends JFrame{
                     userStat user=new userStat();
                     HttpEntity<userStat> request=Class2Json(user);
                     // 发送 POST 请求到服务器
-                    String serverUrl = "http://localhost:1025/texasPoker/getDeskInfo";
+                    String serverUrl = serverUrl_prefix+"/getDeskInfo";
                     String responseBody= restTemplate.postForObject(serverUrl, request, String.class);
-                    //JSONObject jsonObject = new JSONObject(responseBody);
                     pokerDesk info=objectMapper.readValue(responseBody, pokerDesk.class);
-                    //updateGUI(info);
                     setNearest_deskInfo(info);
-                    sleep(20);
+                    settingButton();  //更新按钮
+                    sleep(200);
                 } catch (RuntimeException | InterruptedException e){
                     e.printStackTrace();
                 } catch (JsonMappingException e) {
@@ -182,6 +268,28 @@ public class pokerPanel extends JFrame{
             pool.execute(task);
         }
     }
+    /*
+    根据对应的指令和参数发送连接请求
+     */
+    public void requestByOrder(String order,String param) throws JsonProcessingException {
+            //向服务器发送请求，开一个线程等待
+        try{
+            userStat user=new userStat();
+            HttpEntity<userStat> request=Class2Json(user);
+            // 发送 POST 请求到服务器
+            String serverUrl = serverUrl_prefix+order+param;  //向服务器对应的连接发送请求
+            String responseBody= restTemplate.postForObject(serverUrl, request, String.class);
+            pokerDesk info=objectMapper.readValue(responseBody, pokerDesk.class);
+            setNearest_deskInfo(info);
+        } catch (RuntimeException e){
+            e.printStackTrace();
+        } catch (JsonMappingException e) {
+            throw new RuntimeException(e);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     private void updateGUI() {
         Runnable task=()->{
@@ -218,11 +326,19 @@ public class pokerPanel extends JFrame{
                 globalInfoPanel.add(new JLabel("你的手牌:"),gbc);
                 setGbc(gbc,1,1,3);
                 globalInfoPanel.add(new JLabel(formCards(gameInfo.getHadCards())),gbc);
+                setGbc(gbc,4,1,1);
+                globalInfoPanel.add(new JLabel("赢家: "),gbc);
+                setGbc(gbc,5,1,3);
+                globalInfoPanel.add(new JLabel(gameInfo.getWinner()),gbc);
                 //第4行
                 setGbc(gbc,0,2,1);
                 globalInfoPanel.add(new JLabel("场面牌:"),gbc);
                 setGbc(gbc,1,2,3);
                 globalInfoPanel.add(new JLabel(formCards(gameInfo.getBoardCards())),gbc);
+                setGbc(gbc,4,2,1);
+                globalInfoPanel.add(new JLabel("赢家手牌:"),gbc);
+                setGbc(gbc,5,2,3);
+                globalInfoPanel.add(new JLabel(formCards(gameInfo.getWinner_cards())),gbc);  //显示赢家手牌
 
 
 
@@ -337,7 +453,7 @@ public class pokerPanel extends JFrame{
                 playersPanel.revalidate();
                 playersPanel.repaint();
                 try {
-                    sleep(20);
+                    sleep(200);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -375,6 +491,7 @@ public class pokerPanel extends JFrame{
     public String getTitle(texasPlayer player){
         StringBuilder titles=new StringBuilder("<html>");
         pokerStatics statics=player.getStatics();
+        if(statics.getGameNum()<10) return "";  //小于10场牌局，不显示称号
         if(statics.getRankMoney()==1&&statics.getRankWinNum()==1){
             //胜场+赢钱数最高
             titles.append(getLabelTile("牌场皇者",5));
